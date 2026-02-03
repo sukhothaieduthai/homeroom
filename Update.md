@@ -37,3 +37,9 @@ headers (Row 1) - **UPDATED**:
 
 **Share Settings**:
 Ensure the email `sukhothai@project-15f516f6-33e8-4587-a29.iam.gserviceaccount.com` has **Editor** access.
+
+## [2568-02-04] PDF Generation Fix
+- **Backend**: Switched to `puppeteer` (local) and `@sparticuz/chromium` (production/Vercel) for server-side PDF generation.
+- **Font**: Using Google Font `Sarabun` to fix Thai vowel floating issues.
+- **Layout**: PDF now renders efficiently with correct A4 layout and images.
+- **Features**: Single "Smart" Download button based on current view (Cover, Table, Photos).
