@@ -5,16 +5,16 @@ import { JWT } from 'google-auth-library';
 export interface Advisor {
     id: string;
     name: string;
-    year: number; // e.g., 2568
-    department: string; // e.g., "Information Technology"
-    classLevel: string; // e.g., "ปวช. 1"
-    room: string; // e.g., "1/1"
+    year: number; 
+    department: string;
+    classLevel: string;
+    room: string; 
 }
 
 export interface HomeroomReport {
     id: string;
-    term: string; // e.g., "2"
-    academicYear: string; // e.g., "2568"
+    term: string;
+    academicYear: string;
     week: number;
     date: string;
     advisorName: string;
@@ -83,7 +83,7 @@ export class GoogleSheetService {
         }
 
         try {
-            const sheet = this.doc.sheetsByTitle['Advisors']; // User said "sheet Advisor"
+            const sheet = this.doc.sheetsByTitle['Advisors'];
             if (!sheet) {
                 console.warn("Sheet 'Advisor' not found. Using Mock Data.");
                 return MOCK_ADVISORS.filter(a => a.year === year);
@@ -95,14 +95,12 @@ export class GoogleSheetService {
                 const room = row.get('ห้อง') || '';
                 const classLevel = row.get('ระดับชั้น') || '';
                 const department = row.get('สาขาวิชา') || '';
-
-                // Generate a consistent ID based on content since it's missing
                 const id = `${name}-${classLevel}-${room}`.replace(/\s+/g, '-');
 
                 return {
                     id: id || `generated-${index}`,
                     name,
-                    year: year, // Default to requested year as it's not in sheet
+                    year: year,
                     department,
                     classLevel,
                     room,
@@ -136,17 +134,16 @@ export class GoogleSheetService {
         try {
             let sheet = this.doc.sheetsByTitle['Reports'];
             if (!sheet) {
-                // Try create if missing
                 try {
                     sheet = await this.doc.addSheet({ title: 'Reports' });
                     await sheet.setHeaderRow([
-                        'id', 'week', 'date', 'advisorName', 'department',
-                        'classLevel', 'room', 'topic', 'totalStudents',
-                        'presentStudents', 'absentStudents', 'photoUrl', 'timestamp'
+                        'id', 'term', 'academicYear', 'week', 'date', 
+                        'advisorName', 'department', 'classLevel', 'room', 
+                        'topic', 'totalStudents', 'presentStudents', 
+                        'absentStudents', 'photoUrl', 'timestamp'
                     ]);
                 } catch (e) {
-                    // If creation fails (e.g. exists but hidden or duplicate), try fetching again?
-                    // Just rely on manual creation instruction
+                   console.error("Error creating sheet:", e);
                 }
             }
 
