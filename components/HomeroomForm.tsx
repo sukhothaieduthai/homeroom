@@ -7,7 +7,7 @@ import { saveReportAction } from "@/app/actions";
 import { CalendarIcon, UploadCloudIcon } from "lucide-react";
 
 export default function HomeroomForm() {
-    const [advisor, setAdvisor] = useState<Advisor | null>(null);
+    const [selectedAdvisor, setSelectedAdvisor] = useState<Advisor | null>(null);
     const [formData, setFormData] = useState({
         week: "",
         date: new Date().toISOString().split("T")[0],
@@ -18,9 +18,14 @@ export default function HomeroomForm() {
     });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleAdvisorSelect = (selected: Advisor | null) => {
-        setAdvisor(selected);
+    const handleAdvisorSelect = (advisors: Advisor[]) => {
+        if (advisors.length > 0) {
+            setSelectedAdvisor(advisors[0]);
+        } else {
+            setSelectedAdvisor(null);
+        }
     };
+
 
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -31,7 +36,7 @@ export default function HomeroomForm() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!advisor) {
+        if (!selectedAdvisor) {
             alert("กรุณาเลือกครูที่ปรึกษา");
             return;
         }
@@ -41,10 +46,10 @@ export default function HomeroomForm() {
             await saveReportAction({
                 week: Number(formData.week),
                 date: formData.date,
-                advisorName: advisor.name,
-                department: advisor.department,
-                classLevel: advisor.classLevel,
-                room: advisor.room,
+                advisorName: selectedAdvisor.name,
+                department: selectedAdvisor.department,
+                classLevel: selectedAdvisor.classLevel,
+                room: selectedAdvisor.room,
                 topic: formData.topic,
                 totalStudents: Number(formData.totalStudents),
                 presentStudents: Number(formData.presentStudents),
@@ -71,8 +76,8 @@ export default function HomeroomForm() {
                     <label className="text-sm font-medium text-gray-700">ระดับชั้น</label>
                     <input
                         type="text"
-                        className="border border-gray-300 rounded-md p-2 bg-gray-100 text-gray-600"
-                        value={advisor?.classLevel || ""}
+                        className="border border-gray-300 rounded-md p-2 bg-gray-100 text-gray-900"
+                        value={selectedAdvisor?.classLevel || ""}
                         readOnly
                     />
                 </div>
@@ -80,8 +85,8 @@ export default function HomeroomForm() {
                     <label className="text-sm font-medium text-gray-700">ห้อง</label>
                     <input
                         type="text"
-                        className="border border-gray-300 rounded-md p-2 bg-gray-100 text-gray-600"
-                        value={advisor?.room || ""}
+                        className="border border-gray-300 rounded-md p-2 bg-gray-100 text-gray-900"
+                        value={selectedAdvisor?.room || ""}
                         readOnly
                     />
                 </div>
@@ -98,7 +103,7 @@ export default function HomeroomForm() {
                         name="week"
                         value={formData.week}
                         onChange={handleChange}
-                        className="border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
                         required
                     />
                 </div>
@@ -111,7 +116,7 @@ export default function HomeroomForm() {
                             name="date"
                             value={formData.date}
                             onChange={handleChange}
-                            className="border border-gray-300 rounded-md p-2 w-full focus:ring-2 focus:ring-blue-500 outline-none"
+                            className="border border-gray-300 rounded-md p-2 w-full focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
                             required
                         />
                     </div>
@@ -124,7 +129,7 @@ export default function HomeroomForm() {
                         value={formData.topic}
                         onChange={handleChange}
                         rows={4}
-                        className="border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
                         required
                     />
                 </div>
@@ -133,15 +138,15 @@ export default function HomeroomForm() {
                     {/* Stats */}
                     <div className="flex flex-col gap-2">
                         <label className="text-sm font-medium text-gray-700">จำนวนทั้งหมด</label>
-                        <input type="number" name="totalStudents" value={formData.totalStudents} onChange={handleChange} className="border border-gray-300 rounded-md p-2 outline-none" required />
+                        <input type="number" name="totalStudents" value={formData.totalStudents} onChange={handleChange} className="border border-gray-300 rounded-md p-2 outline-none text-gray-900" required />
                     </div>
                     <div className="flex flex-col gap-2">
                         <label className="text-sm font-medium text-gray-700">จำนวนที่มา</label>
-                        <input type="number" name="presentStudents" value={formData.presentStudents} onChange={handleChange} className="border border-gray-300 rounded-md p-2 outline-none" required />
+                        <input type="number" name="presentStudents" value={formData.presentStudents} onChange={handleChange} className="border border-gray-300 rounded-md p-2 outline-none text-gray-900" required />
                     </div>
                     <div className="flex flex-col gap-2">
                         <label className="text-sm font-medium text-gray-700">จำนวนที่ขาด</label>
-                        <input type="number" name="absentStudents" value={formData.absentStudents} onChange={handleChange} className="border border-gray-300 rounded-md p-2 bg-gray-100" readOnly={false} placeholder="(คำนวณอัตโนมัติได้ถ้าต้องการ)" />
+                        <input type="number" name="absentStudents" value={formData.absentStudents} onChange={handleChange} className="border border-gray-300 rounded-md p-2 bg-gray-100 text-gray-900" readOnly={false} placeholder="(คำนวณอัตโนมัติได้ถ้าต้องการ)" />
                     </div>
                 </div>
 
