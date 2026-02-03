@@ -21,13 +21,6 @@ export default function ReportView() {
     const handleExportPDF = () => {
         const doc = new jsPDF();
 
-        // Add Thai font support would require a font file (e.g., THSarabunNew). 
-        // For this MVP without external assets, text might check incorrectly if not standard ASCII.
-        // However, we will attempt strict standard font or assume English for MVP 
-        // OR we warn the user about Thai font support needing asset injection.
-        // For now, I'll use standard font to ensure it runs, but Thai characters will show as squares without a font.
-        // I will add a note about this limitation.
-
         doc.text("Homeroom Report", 14, 20);
 
         const tableData = reports.map(r => [
@@ -65,12 +58,12 @@ export default function ReportView() {
                 <table className="min-w-full divide-y divide-gray-200 bg-white">
                     <thead className="bg-gray-50">
                         <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Week</th>
+                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Week</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Advisor</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Topic</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stats</th>
+                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Stats</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -83,14 +76,14 @@ export default function ReportView() {
                         ) : (
                             reports.map((report) => (
                                 <tr key={report.id}>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{report.date}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{report.week}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{report.advisorName}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{report.classLevel} {report.room}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 truncate max-w-xs">{report.topic}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">{report.date}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">{report.week}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-left">{report.advisorName}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">{report.classLevel}/{report.room}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-left truncate max-w-xs">{report.topic}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
                                         <span className="text-green-600 font-medium">{report.presentStudents}</span>
-                                        <span className="text-gray-400">/</span>
+                                        <span className="text-gray-400 mx-1">/</span>
                                         <span>{report.totalStudents}</span>
                                     </td>
                                 </tr>

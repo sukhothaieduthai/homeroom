@@ -14,11 +14,10 @@ export default function Home() {
         {/* Header Card */}
         <div className="bg-white rounded-xl shadow-sm p-6 text-center border-t-4 border-blue-400">
           <h1 className="text-2xl font-bold text-blue-700">แบบบันทึกกิจกรรมโฮมรูม</h1>
-          <p className="text-blue-600 font-medium">ภาคเรียนที่ 2/2568 วิทยาลัยอาชีวศึกษาสุโขทัย</p>
+          <p className="text-blue-600 font-medium">วิทยาลัยอาชีวศึกษาสุโขทัย</p>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex gap-4 justify-center md:justify-start">
+        <div className="flex gap-4 justify-center">
           <button
             onClick={() => setActiveTab("record")}
             className={`px-6 py-2 rounded-md font-bold transition-all ${activeTab === "record"

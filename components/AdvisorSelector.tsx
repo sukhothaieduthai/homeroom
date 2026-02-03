@@ -7,7 +7,7 @@ import { getAdvisorsAction } from "@/app/actions";
 
 interface AdvisorSelectorProps {
     year: number;
-    onAdvisorSelect: (advisor: Advisor | null) => void;
+    onAdvisorSelect: (advisors: Advisor[]) => void;
 }
 
 export default function AdvisorSelector({ year, onAdvisorSelect }: AdvisorSelectorProps) {
@@ -31,14 +31,15 @@ export default function AdvisorSelector({ year, onAdvisorSelect }: AdvisorSelect
         const dept = e.target.value;
         setSelectedDepartment(dept);
         setSelectedAdvisorId("");
-        onAdvisorSelect(null);
+        onAdvisorSelect([]);
     };
 
     const handleAdvisorChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const id = e.target.value;
         setSelectedAdvisorId(id);
-        const advisor = advisors.find((a) => a.id === id) || null;
-        onAdvisorSelect(advisor);
+
+        const match = advisors.find(a => a.id === id);
+        onAdvisorSelect(match ? [match] : []);
     };
 
     const filteredAdvisors = advisors.filter(
@@ -51,7 +52,7 @@ export default function AdvisorSelector({ year, onAdvisorSelect }: AdvisorSelect
             <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-gray-700">สาขาวิชา</label>
                 <select
-                    className="border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                    className="border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
                     value={selectedDepartment}
                     onChange={handleDepartmentChange}
                 >
@@ -68,7 +69,7 @@ export default function AdvisorSelector({ year, onAdvisorSelect }: AdvisorSelect
             <div className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-gray-700">ครูที่ปรึกษา</label>
                 <select
-                    className="border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100"
+                    className="border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100 text-gray-900"
                     value={selectedAdvisorId}
                     onChange={handleAdvisorChange}
                     disabled={!selectedDepartment}
@@ -76,7 +77,7 @@ export default function AdvisorSelector({ year, onAdvisorSelect }: AdvisorSelect
                     <option value="">--- กรุณาเลือกครูที่ปรึกษา ---</option>
                     {filteredAdvisors.map((advisor) => (
                         <option key={advisor.id} value={advisor.id}>
-                            {advisor.name}
+                            {advisor.name} ({advisor.classLevel}/{advisor.room})
                         </option>
                     ))}
                 </select>
