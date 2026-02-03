@@ -230,11 +230,29 @@ export async function POST(req: NextRequest) {
             </html>
         `;
 
-        // --- Puppeteer ---
-        const browser = await puppeteer.launch({
-            headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
-        });
+        // --- Puppeteer Launch Logic ---
+        let browser;
+
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production') {
+            // Vercel / Production: Use puppeteer-core + @sparticuz/chromium
+            const chromium = require('@sparticuz/chromium');
+            const puppeteerCore = require('puppeteer-core');
+
+            browser = await puppeteerCore.launch({
+                args: chromium.args,
+                defaultViewport: chromium.defaultViewport,
+                executablePath: await chromium.executablePath(),
+                headless: chromium.headless,
+            });
+        } else {
+            // Local Development: Use full puppeteer
+            const puppeteer = require('puppeteer'); // Dynamically require puppeteer
+            browser = await puppeteer.launch({
+                headless: true,
+                args: ['--no-sandbox', '--disable-setuid-sandbox']
+            });
+        }
+
         const page = await browser.newPage();
 
         // Optimize: set HTML content
