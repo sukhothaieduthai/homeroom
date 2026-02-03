@@ -7,6 +7,19 @@ import { saveReportAction } from "@/app/actions";
 import { CalendarIcon, UploadCloudIcon } from "lucide-react";
 
 export default function HomeroomForm() {
+    // Calculate dynamic years
+    const currentYearAD = new Date().getFullYear();
+    const currentYearBE = currentYearAD + 543;
+    const years = [
+        currentYearBE - 1,
+        currentYearBE,
+        currentYearBE + 1,
+        currentYearBE + 2,
+        currentYearBE + 3,
+    ];
+
+    const [term, setTerm] = useState("2");
+    const [academicYear, setAcademicYear] = useState(String(currentYearBE));
     const [selectedAdvisor, setSelectedAdvisor] = useState<Advisor | null>(null);
     const [formData, setFormData] = useState({
         week: "",
@@ -28,7 +41,7 @@ export default function HomeroomForm() {
 
 
     const handleChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
     ) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
@@ -44,6 +57,8 @@ export default function HomeroomForm() {
         setIsSubmitting(true);
         try {
             await saveReportAction({
+                term,
+                academicYear,
                 week: Number(formData.week),
                 date: formData.date,
                 advisorName: selectedAdvisor.name,
@@ -56,7 +71,8 @@ export default function HomeroomForm() {
                 absentStudents: Number(formData.absentStudents),
             });
             alert("บันทึกข้อมูลเรียบร้อยแล้ว");
-            // Reset form or redirect
+            // Reset form (optional)
+            setFormData(prev => ({ ...prev, topic: "", week: "" }));
         } catch (error) {
             console.error(error);
             alert("เกิดข้อผิดพลาดในการบันทึก");
@@ -68,7 +84,35 @@ export default function HomeroomForm() {
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
 
-            <AdvisorSelector year={2568} onAdvisorSelect={handleAdvisorSelect} />
+            {/* Term and Year Selection */}
+            <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-gray-700">ภาคเรียนที่</label>
+                    <select
+                        value={term}
+                        onChange={(e) => setTerm(e.target.value)}
+                        className="border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
+                    >
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option> {/* Summer? */}
+                    </select>
+                </div>
+                <div className="flex flex-col gap-2">
+                    <label className="text-sm font-medium text-gray-700">ปีการศึกษา</label>
+                    <select
+                        value={academicYear}
+                        onChange={(e) => setAcademicYear(e.target.value)}
+                        className="border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
+                    >
+                        {years.map((y) => (
+                            <option key={y} value={y}>{y}</option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+
+            <AdvisorSelector year={Number(academicYear)} onAdvisorSelect={handleAdvisorSelect} />
 
             {/* Auto-filled Fields */}
             <div className="grid grid-cols-1 gap-6">

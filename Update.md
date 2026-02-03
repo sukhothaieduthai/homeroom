@@ -12,14 +12,28 @@ I have connected the application to your Google Sheet: [Link](https://docs.googl
 
 **Sheet 1 Name: `Advisor`** (Note: Singular "Advisor")
 headers (Row 1):
-- `ครูที่ปรึกษา`
+- `ระดับชั้น`
 - `ห้อง`
-- `ชั้น`
 - `สาขาวิชา`
+- `ครูที่ปรึกษา`
 
 **Sheet 2 Name: `Reports`**
-headers (Row 1) - Can be auto-created by app, but good to check:
-- `id`, `week`, `date`, `advisorName`, `department`, `classLevel`, `room`, `topic`, `totalStudents`, `presentStudents`, `absentStudents`, `timestamp`
+headers (Row 1) - **UPDATED**:
+- `id`
+- `term`
+- `academicYear`
+- `week`
+- `date`
+- `advisorName`
+- `department`
+- `classLevel`
+- `room`
+- `topic`
+- `totalStudents`
+- `presentStudents`
+- `absentStudents`
+- `photoUrl`
+- `timestamp`
 
 **Share Settings**:
 Ensure the email `sukhothai@project-15f516f6-33e8-4587-a29.iam.gserviceaccount.com` has **Editor** access.

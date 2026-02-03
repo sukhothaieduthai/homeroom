@@ -13,6 +13,8 @@ export interface Advisor {
 
 export interface HomeroomReport {
     id: string;
+    term: string; // e.g., "2"
+    academicYear: string; // e.g., "2568"
     week: number;
     date: string;
     advisorName: string;
@@ -81,7 +83,7 @@ export class GoogleSheetService {
         }
 
         try {
-            const sheet = this.doc.sheetsByTitle['Advisor']; // User said "sheet Advisor"
+            const sheet = this.doc.sheetsByTitle['Advisors']; // User said "sheet Advisor"
             if (!sheet) {
                 console.warn("Sheet 'Advisor' not found. Using Mock Data.");
                 return MOCK_ADVISORS.filter(a => a.year === year);
@@ -91,7 +93,7 @@ export class GoogleSheetService {
             const advisors: Advisor[] = rows.map((row, index) => {
                 const name = row.get('ครูที่ปรึกษา') || '';
                 const room = row.get('ห้อง') || '';
-                const classLevel = row.get('ชั้น') || '';
+                const classLevel = row.get('ระดับชั้น') || '';
                 const department = row.get('สาขาวิชา') || '';
 
                 // Generate a consistent ID based on content since it's missing
@@ -151,6 +153,8 @@ export class GoogleSheetService {
             if (sheet) {
                 await sheet.addRow({
                     id: newReport.id,
+                    term: newReport.term,
+                    academicYear: newReport.academicYear,
                     week: newReport.week,
                     date: newReport.date,
                     advisorName: newReport.advisorName,
@@ -187,6 +191,8 @@ export class GoogleSheetService {
             const rows = await sheet.getRows();
             return rows.map(row => ({
                 id: row.get('id'),
+                term: row.get('term') || '',
+                academicYear: row.get('academicYear') || '',
                 week: Number(row.get('week')),
                 date: row.get('date'),
                 advisorName: row.get('advisorName'),
