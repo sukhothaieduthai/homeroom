@@ -3,8 +3,9 @@
 import { useState } from "react";
 import AdvisorSelector from "./AdvisorSelector";
 import { Advisor } from "@/lib/google-sheets";
-import { saveReportAction } from "@/app/actions";
-import { UploadCloudIcon } from "lucide-react";
+import { saveReportAction, uploadPhotosAction } from "@/app/actions";
+import { CalendarIcon, UploadCloudIcon, XIcon, ImageIcon } from "lucide-react";
+import Image from "next/image";
 
 export default function HomeroomForm() {
     const currentYearAD = new Date().getFullYear();
@@ -28,6 +29,8 @@ export default function HomeroomForm() {
         presentStudents: "0",
         absentStudents: "0",
     });
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleAdvisorSelect = (advisors: Advisor[]) => {
@@ -68,7 +71,7 @@ export default function HomeroomForm() {
                 if (present > total) {
                     updatedData.presentStudents = String(total);
                 }
-                
+
                 const finalTotal = parseInt(updatedData.totalStudents) || 0;
                 const finalPresent = parseInt(updatedData.presentStudents) || 0;
                 updatedData.absentStudents = String(finalTotal - finalPresent);
@@ -76,6 +79,32 @@ export default function HomeroomForm() {
 
             return updatedData;
         });
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        if (files.length + selectedFiles.length > 3) {
+            alert("อัปโหลดได้สูงสุด 3 รูปภาพ");
+            return;
+        }
+
+        const newFiles = [...selectedFiles, ...files];
+        setSelectedFiles(newFiles);
+
+        // Generate previews
+        const newPreviews = files.map(file => URL.createObjectURL(file));
+        setImagePreviews(prev => [...prev, ...newPreviews]);
+    };
+
+    const removeFile = (index: number) => {
+        const newFiles = [...selectedFiles];
+        newFiles.splice(index, 1);
+        setSelectedFiles(newFiles);
+
+        const newPreviews = [...imagePreviews];
+        URL.revokeObjectURL(newPreviews[index]); // Cleanup
+        newPreviews.splice(index, 1);
+        setImagePreviews(newPreviews);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -87,6 +116,17 @@ export default function HomeroomForm() {
 
         setIsSubmitting(true);
         try {
+            // 1. Upload Photos
+            let photoUrls: string[] = [];
+            if (selectedFiles.length > 0) {
+                const formDataUpload = new FormData();
+                selectedFiles.forEach(file => {
+                    formDataUpload.append("files", file);
+                });
+                photoUrls = await uploadPhotosAction(formDataUpload);
+            }
+
+            // 2. Save Report
             await saveReportAction({
                 term,
                 academicYear,
@@ -100,16 +140,22 @@ export default function HomeroomForm() {
                 totalStudents: Number(formData.totalStudents),
                 presentStudents: Number(formData.presentStudents),
                 absentStudents: Number(formData.absentStudents),
+                photoUrl: photoUrls.join(","), // Store as comma-separated string
             });
-            alert("บันทึกข้อมูลเรียบร้อยแล้ว");
-            setFormData(prev => ({ 
-                ...prev, 
-                topic: "", 
+
+            alert("บันทึกข้อมูลและอัปโหลดรูปภาพเรียบร้อยแล้ว");
+
+            // Reset form
+            setFormData(prev => ({
+                ...prev,
+                topic: "",
                 week: "1",
                 totalStudents: "0",
                 presentStudents: "0",
-                absentStudents: "0" 
+                absentStudents: "0"
             }));
+            setSelectedFiles([]);
+            setImagePreviews([]);
         } catch (error) {
             console.error(error);
             alert("เกิดข้อผิดพลาดในการบันทึก");
@@ -131,6 +177,7 @@ export default function HomeroomForm() {
                     >
                         <option value="1">1</option>
                         <option value="2">2</option>
+                        <option value="3">3</option>
                     </select>
                 </div>
                 <div className="flex flex-col gap-2">
@@ -215,45 +262,70 @@ export default function HomeroomForm() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="flex flex-col gap-2">
                         <label className="text-sm font-medium text-gray-700">จำนวนทั้งหมด</label>
-                        <input 
-                            type="number" 
-                            name="totalStudents" 
+                        <input
+                            type="number"
+                            name="totalStudents"
                             min="0"
-                            value={formData.totalStudents} 
-                            onChange={handleChange} 
-                            className="border border-gray-300 rounded-md p-2 outline-none text-gray-900" 
-                            required 
+                            value={formData.totalStudents}
+                            onChange={handleChange}
+                            className="border border-gray-300 rounded-md p-2 outline-none text-gray-900"
+                            required
                         />
                     </div>
                     <div className="flex flex-col gap-2">
                         <label className="text-sm font-medium text-gray-700">จำนวนที่มา</label>
-                        <input 
-                            type="number" 
-                            name="presentStudents" 
+                        <input
+                            type="number"
+                            name="presentStudents"
                             min="0"
-                            value={formData.presentStudents} 
-                            onChange={handleChange} 
-                            className="border border-gray-300 rounded-md p-2 outline-none text-gray-900" 
-                            required 
+                            value={formData.presentStudents}
+                            onChange={handleChange}
+                            className="border border-gray-300 rounded-md p-2 outline-none text-gray-900"
+                            required
                         />
                     </div>
                     <div className="flex flex-col gap-2">
                         <label className="text-sm font-medium text-gray-700">จำนวนที่ขาด</label>
-                        <input 
-                            type="number" 
-                            name="absentStudents" 
-                            value={formData.absentStudents} 
-                            className="border border-gray-300 rounded-md p-2 bg-gray-100 text-gray-900 font-medium" 
-                            readOnly 
+                        <input
+                            type="number"
+                            name="absentStudents"
+                            value={formData.absentStudents}
+                            className="border border-gray-300 rounded-md p-2 bg-gray-100 text-gray-900 font-medium"
+                            readOnly
                         />
                     </div>
                 </div>
 
                 <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700">อัปโหลดรูปภาพกิจกรรม (1-3 ภาพ, JPG หรือ PNG)</label>
-                    <div className="border border-dashed border-gray-300 rounded-md p-4 bg-gray-50 flex items-center justify-center gap-2 text-gray-500 cursor-not-allowed">
-                        <UploadCloudIcon size={20} />
-                        <span>Upload Feature Coming Soon</span>
+                    <label className="text-sm font-medium text-gray-700">อัปโหลดรูปภาพกิจกรรม (1-3 ภาพ)</label>
+                    <div className="border border-dashed border-gray-300 rounded-md p-4 bg-gray-50 flex flex-col items-center justify-center gap-4">
+                        <div className="flex gap-4 flex-wrap justify-center">
+                            {imagePreviews.map((src, index) => (
+                                <div key={index} className="relative w-24 h-24 rounded-md overflow-hidden border">
+                                    <Image src={src} alt="Preview" fill className="object-cover" />
+                                    <button
+                                        type="button"
+                                        onClick={() => removeFile(index)}
+                                        className="absolute top-0 right-0 bg-red-500 text-white rounded-bl-md p-1 hover:bg-red-600"
+                                    >
+                                        <XIcon size={12} />
+                                    </button>
+                                </div>
+                            ))}
+                            {imagePreviews.length < 3 && (
+                                <label className="w-24 h-24 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md cursor-pointer hover:bg-gray-100 transition-colors">
+                                    <UploadCloudIcon className="text-gray-400 mb-1" />
+                                    <span className="text-xs text-gray-500">เลือกรูป</span>
+                                    <input
+                                        type="file"
+                                        accept="image/png, image/jpeg, image/jpg"
+                                        multiple
+                                        className="hidden"
+                                        onChange={handleFileChange}
+                                    />
+                                </label>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

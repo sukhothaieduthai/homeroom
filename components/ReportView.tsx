@@ -20,8 +20,7 @@ export default function ReportView() {
 
     const handleExportPDF = () => {
         const doc = new jsPDF();
-
-        doc.text("Homeroom Report", 14, 20);
+        doc.text("Homeroom Report (Summary)", 14, 20);
 
         const tableData = reports.map(r => [
             r.date,
@@ -38,19 +37,19 @@ export default function ReportView() {
             startY: 30,
         });
 
-        doc.save("homeroom-report.pdf");
+        doc.save("homeroom-summary.pdf");
     };
 
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold text-gray-800">รายงานสรุปผล</h2>
+                <h2 className="text-xl font-semibold text-gray-800">สรุปรายงานทั้งหมด</h2>
                 <button
                     onClick={handleExportPDF}
                     className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md transition-colors"
                 >
                     <DownloadIcon size={18} />
-                    Export PDF
+                    Export Summary
                 </button>
             </div>
 
