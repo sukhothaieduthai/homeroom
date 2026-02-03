@@ -77,7 +77,7 @@ export default function AdvisorSelector({ year, onAdvisorSelect }: AdvisorSelect
                     <option value="">--- กรุณาเลือกครูที่ปรึกษา ---</option>
                     {filteredAdvisors.map((advisor) => (
                         <option key={advisor.id} value={advisor.id}>
-                            {advisor.name} ({advisor.classLevel} {advisor.room})
+                            {advisor.name} ({advisor.classLevel}/{advisor.room})
                         </option>
                     ))}
                 </select>
