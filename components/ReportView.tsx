@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Advisor, HomeroomReport, sheetService } from "@/lib/google-sheets";
+import { HomeroomReport } from "@/lib/google-sheets";
+import { getReportsAction } from "@/app/actions";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { DownloadIcon } from "lucide-react";
@@ -11,7 +12,7 @@ export default function ReportView() {
 
     useEffect(() => {
         async function fetchReports() {
-            const data = await sheetService.getReports();
+            const data = await getReportsAction();
             setReports(data);
         }
         fetchReports();

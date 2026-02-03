@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Advisor, sheetService } from "@/lib/google-sheets";
+import { Advisor } from "@/lib/google-sheets";
+import { getAdvisorsAction } from "@/app/actions";
 // import { cn } from "@/lib/utils"; // If needed for styling
 
 interface AdvisorSelectorProps {
@@ -18,7 +19,7 @@ export default function AdvisorSelector({ year, onAdvisorSelect }: AdvisorSelect
 
     useEffect(() => {
         async function loadAdvisors() {
-            const data = await sheetService.getAdvisors(year);
+            const data = await getAdvisorsAction(year);
             setAdvisors(data);
             const uniqueDepts = Array.from(new Set(data.map((a) => a.department)));
             setDepartments(uniqueDepts);

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import AdvisorSelector from "./AdvisorSelector";
-import { Advisor, sheetService } from "@/lib/google-sheets";
+import { Advisor } from "@/lib/google-sheets";
+import { saveReportAction } from "@/app/actions";
 import { CalendarIcon, UploadCloudIcon } from "lucide-react";
 
 export default function HomeroomForm() {
@@ -37,7 +38,7 @@ export default function HomeroomForm() {
 
         setIsSubmitting(true);
         try {
-            await sheetService.saveReport({
+            await saveReportAction({
                 week: Number(formData.week),
                 date: formData.date,
                 advisorName: advisor.name,
