@@ -23,7 +23,6 @@ export default function ReportView() {
 
         doc.text("Homeroom Report", 14, 20);
 
-        // ส่วนของ PDF คงเดิมตามที่แจ้ง (ยังไม่เพิ่ม Term/Year)
         const tableData = reports.map(r => [
             r.date,
             r.week,
@@ -64,14 +63,15 @@ export default function ReportView() {
                             <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Week</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Advisor</th>
                             <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Topic</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Topic</th>                            
                             <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Stats</th>
+                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Absent</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                         {reports.length === 0 ? (
                             <tr>
-                                <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                                <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
                                     No reports found
                                 </td>
                             </tr>
@@ -88,6 +88,9 @@ export default function ReportView() {
                                         <span className="text-green-600 font-medium">{report.presentStudents}</span>
                                         <span className="text-gray-400 mx-1">/</span>
                                         <span>{report.totalStudents}</span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-bold text-center">
+                                        {report.absentStudents}
                                     </td>
                                 </tr>
                             ))
