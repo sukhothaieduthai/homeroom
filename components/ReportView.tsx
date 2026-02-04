@@ -5,7 +5,7 @@ import { HomeroomReport } from "@/lib/google-sheets";
 import { getReportsAction } from "@/app/actions";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { DownloadIcon } from "lucide-react";
+import { DownloadIcon, Image as ImageIcon } from "lucide-react";
 
 export default function ReportView() {
     const [reports, setReports] = useState<HomeroomReport[]>([]);
@@ -26,13 +26,15 @@ export default function ReportView() {
             r.date,
             r.week,
             r.advisorName,
+            r.department,
             r.classLevel + " " + r.room,
             r.topic,
-            `${r.presentStudents}/${r.totalStudents}`
+            `${r.presentStudents}/${r.totalStudents}`,
+            r.photoUrl ? "Yes" : "No"
         ]);
 
         autoTable(doc, {
-            head: [['Date', 'Week', 'Advisor', 'Class', 'Topic', 'Present/Total']],
+            head: [['Date', 'Week', 'Advisor', 'Dept', 'Class', 'Topic', 'Stats', 'Pic']],
             body: tableData,
             startY: 30,
         });
@@ -61,16 +63,18 @@ export default function ReportView() {
                             <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                             <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Week</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Advisor</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
                             <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Topic</th>                            
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Topic</th>
                             <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Stats</th>
                             <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Absent</th>
+                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Picture</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                         {reports.length === 0 ? (
                             <tr>
-                                <td colSpan={8} className="px-6 py-4 text-center text-gray-500">
+                                <td colSpan={10} className="px-6 py-4 text-center text-gray-500">
                                     No reports found
                                 </td>
                             </tr>
@@ -81,6 +85,11 @@ export default function ReportView() {
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">{report.date}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">{report.week}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-left">{report.advisorName}</td>
+                                    
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-left truncate max-w-[150px]" title={report.department}>
+                                        {report.department}
+                                    </td>
+
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">{report.classLevel}/{report.room}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-left truncate max-w-xs">{report.topic}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
@@ -90,6 +99,22 @@ export default function ReportView() {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-bold text-center">
                                         {report.absentStudents}
+                                    </td>
+
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
+                                        {report.photoUrl ? (
+                                            <a 
+                                                href={report.photoUrl} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline"
+                                            >
+                                                <ImageIcon size={16} />
+                                                View
+                                            </a>
+                                        ) : (
+                                            <span className="text-gray-400">-</span>
+                                        )}
                                     </td>
                                 </tr>
                             ))
