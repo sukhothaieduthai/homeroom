@@ -20,6 +20,27 @@ export async function getAdvisorsAction(year: number): Promise<Advisor[]> {
 export async function saveReportAction(report: Omit<HomeroomReport, 'id' | 'timestamp'>): Promise<string> {
     console.log("Saving report...");
     await sheetService.connect();
+    try {
+        const year = parseInt(report.academicYear);
+        
+        if (!isNaN(year)) {
+            const allAdvisors = await sheetService.getAdvisors(year);
+            const matchedAdvisors = allAdvisors.filter(a => 
+                a.classLevel === report.classLevel &&
+                a.room === report.room && 
+                a.department === report.department
+            );
+
+            if (matchedAdvisors.length > 0) {
+                const combinedNames = matchedAdvisors.map(a => a.name).join(" และ ");
+                
+                report.advisorName = combinedNames;
+                console.log(`Auto-filled advisors: ${combinedNames}`);
+            }
+        }
+    } catch (error) {
+        console.error("Error auto-filling co-advisors (using original input):", error);
+    }
     return sheetService.saveReport(report);
 }
 
