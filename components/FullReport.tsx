@@ -294,22 +294,29 @@ export default function FullReport() {
                                 </div>
                                 <table className="w-full border-collapse border border-black text-sm">
                                     <thead>
-                                        <tr className="bg-gray-200 text-center">
-                                            <th className="border border-black p-3 w-1/4">สัปดาห์ที่/วัน/เวลา</th>
-                                            <th className="border border-black p-3">เรื่องที่อบรม</th>
-                                            <th className="border border-black p-3 w-16">ทั้งหมด</th>
-                                            <th className="border border-black p-3 w-16">มา</th>
-                                            <th className="border border-black p-3 w-16">ขาด</th>
+                                        <tr className="bg-gray-100 text-center">
+                                            <th className="border border-black p-3 w-[20%]" rowSpan={2}>สัปดาห์ที่/วัน/เวลา<br />สถานที่อบรม</th>
+                                            <th className="border border-black p-3" rowSpan={2}>เรื่อง/กิจกรรม/แนวทาง/เจ้าหน้าที่</th>
+                                            <th className="border border-black p-3" colSpan={3}>ข้อมูลนักเรียน/นักศึกษา</th>
+                                        </tr>
+                                        <tr className="bg-gray-100 text-center">
+                                            <th className="border border-black p-2 w-[8%]">จำนวน</th>
+                                            <th className="border border-black p-2 w-[8%]">มา</th>
+                                            <th className="border border-black p-2 w-[8%]">ขาด</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {filteredReports.length > 0 ? filteredReports.map(r => (
                                             <tr key={r.id}>
-                                                <td className="border border-black p-2 text-center text-sm">{r.week} <br /> <span className="text-gray-600 text-xs">{r.date}</span></td>
-                                                <td className="border border-black p-2">{r.topic}</td>
-                                                <td className="border border-black p-2 text-center">{r.totalStudents}</td>
-                                                <td className="border border-black p-2 text-center">{r.presentStudents}</td>
-                                                <td className="border border-black p-2 text-center">{r.absentStudents}</td>
+                                                <td className="border border-black p-2 text-sm align-top">
+                                                    <div className="font-medium">สัปดาห์ที่ {r.week}</div>
+                                                    <div className="text-xs text-gray-700 mt-1">{r.date}</div>
+                                                    <div className="text-xs text-gray-600 mt-1">เวลา 13.00-14.00 น.</div>
+                                                </td>
+                                                <td className="border border-black p-2 align-top">{r.topic}</td>
+                                                <td className="border border-black p-2 text-center align-top">{r.totalStudents}</td>
+                                                <td className="border border-black p-2 text-center align-top">{r.presentStudents}</td>
+                                                <td className="border border-black p-2 text-center align-top">{r.absentStudents}</td>
                                             </tr>
                                         )) : (
                                             <tr>

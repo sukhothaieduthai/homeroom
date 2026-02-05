@@ -83,6 +83,7 @@ export default function HomeroomForm() {
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
+
         if (files.length + selectedFiles.length > 3) {
             alert("อัปโหลดได้สูงสุด 3 รูปภาพ");
             return;
@@ -109,6 +110,7 @@ export default function HomeroomForm() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
         if (!selectedAdvisor) {
             alert("กรุณาเลือกครูที่ปรึกษา");
             return;
@@ -120,13 +122,14 @@ export default function HomeroomForm() {
             let photoUrls: string[] = [];
             if (selectedFiles.length > 0) {
                 const formDataUpload = new FormData();
-                selectedFiles.forEach(file => {
+                selectedFiles.forEach((file) => {
                     formDataUpload.append("files", file);
                 });
+
                 photoUrls = await uploadPhotosAction(formDataUpload);
             }
 
-            // 2. Save Report
+            // 2. Save Report  
             await saveReportAction({
                 term,
                 academicYear,
@@ -140,7 +143,7 @@ export default function HomeroomForm() {
                 totalStudents: Number(formData.totalStudents),
                 presentStudents: Number(formData.presentStudents),
                 absentStudents: Number(formData.absentStudents),
-                photoUrl: photoUrls.join(","), // Store as comma-separated string
+                photoUrl: photoUrls.join(","),
             });
 
             alert("บันทึกข้อมูลและอัปโหลดรูปภาพเรียบร้อยแล้ว");
@@ -157,8 +160,8 @@ export default function HomeroomForm() {
             setSelectedFiles([]);
             setImagePreviews([]);
         } catch (error) {
-            console.error(error);
-            alert("เกิดข้อผิดพลาดในการบันทึก");
+            console.error("[Form] Error:", error);
+            alert("เกิดข้อผิดพลาดในการบันทึก: " + (error instanceof Error ? error.message : "Unknown error"));
         } finally {
             setIsSubmitting(false);
         }

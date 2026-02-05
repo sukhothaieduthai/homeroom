@@ -12,20 +12,32 @@
 
 ## Key Features
 1.  **Homeroom Record Form (`HomeroomForm.tsx`)**:
-    -   Allows advisors to input data: Week, Date, Topic, Student Stats (Total, Present, Absent), Component photos.
-    -   **Advisor Selection**: Smart 3-step dropdowns (Department -> Advisor Name -> Room) to handle advisors with multiple rooms.
+    -   Allows advisors to input data: Week, Date, Topic, Student Stats (Total, Present, Absent), Activity photos.
+    -   **Advisor Selection**: Smart 3-step dropdowns (Department → Advisor Name → Room) to handle advisors with multiple rooms.
     -   Auto-fetches details based on selection.
-    -   Uploads photos to local storage (`public/uploads`) - *Planned: Migration to Google Drive*.
+    -   Photos uploaded to Google Drive via Apps Script Web App.
 
-2.  **Reports Dashboard**:
-    -   View submitted reports.
-    -   Summary views.
+
+2.  **Reports Dashboard (`FullReport.tsx`)**:
+    -   View submitted reports in multiple formats (Cover, Table, Photos).
+    -   Generate PDF reports with custom formatting.
+    -   Filter by term, academic year, and advisor.
 
 3.  **PDF Generation**:
     -   Generates printable PDF reports for documentation.
     -   Uses **Puppeteer (Server-Side)** for both Full Reports and Summary Reports to ensure consistent rendering.
     -   **Thai Font Support**: Embeds "Sarabun" font directly into the PDF to prevent rendering issues on headless servers.
     -   Key issue addressed recently: Vercel deployment compatibility (using `@sparticuz/chromium`).
+
+4.  **Google Apps Script Integration**:
+    -   All homeroom activity photos are uploaded via a Google Apps Script Web App instead of direct Google Drive API.
+    -   Files are converted to base64 and sent via HTTP POST to the Apps Script endpoint.
+    -   Apps Script handles the upload to Google Drive and returns publicly accessible URLs.
+    -   **Why Apps Script?**: Avoids Service Account quota issues and simplifies authentication.
+    -   **Setup Requirements**:
+        -   Deploy a Google Apps Script Web App with file upload handling.
+        -   Add the Web App URL to `GOOGLE_APPS_SCRIPT_URL` in `.env.local`.
+        -   Apps Script runs under your Google account, using your Drive quota.
 
 ## Project Structure
 -   `app/`: App Router pages and API routes.
@@ -44,8 +56,15 @@
     -   `GOOGLE_SHEET_ID`: ID of the Google Sheet used as DB.
     -   `GOOGLE_SERVICE_ACCOUNT_EMAIL`: Service account email.
     -   `GOOGLE_PRIVATE_KEY`: Private key for the service account.
--   **Credentials**: Uses a Service Account Key (JSON) mechanism. Supports "Bridge Method" where a personal Service Account edits a shared Work Sheet if Org Policy blocks key creation.
+    -   `GOOGLE_APPS_SCRIPT_URL`: URL of the Google Apps Script Web App for file uploads.
+-   **Credentials**: Uses a Service Account Key (JSON) mechanism for Google Sheets access. File uploads go through Google Apps Script Web App.
 -   **Mock Mode:** The application gracefully falls back to mock data if credentials are missing or invalid.
+
+## Google Apps Script Setup
+1.  **Create/Deploy Web App**: Deploy a Google Apps Script that accepts file uploads via POST
+2.  **Get Web App URL**: Copy the deployment URL (format: `https://script.google.com/macros/s/.../exec`)
+3.  **Add to Environment**: Set `GOOGLE_APPS_SCRIPT_URL` in `.env.local`
+4.  **File Flow**: Form → Base64 encoding → POST to Apps Script → Upload to Drive → Return URL
 
 ## Workflow
 1.  User fills out `HomeroomForm`.
@@ -54,8 +73,11 @@
 4.  User can view reports or generate PDFs.
 
 ## Recent Updates / Context
+-   **File Upload Method** (2026-02-05): Switched from Google Drive API to Google Apps Script Web App to avoid quota/authentication issues. Files are now base64-encoded and POSTed to Apps Script endpoint.
+-   **PDF Report Redesign** (2026-02-05): Updated table format in FullReport.tsx to match institutional requirements with proper column headers and data layout.
+-   **Code Cleanup** (2026-02-05): Removed verbose debug console.log statements while keeping essential error logging.
 -   **Advisor Selection**: Refactored `AdvisorSelector.tsx` to group by advisor name first, preventing duplicate entries for advisors with multiple rooms.
--   **Configuration**: Updated to use full JSON Service Account Key for robust authentication.
+-   **Configuration**: Updated to use full JSON Service Account Key for Google Sheets. File uploads use Apps Script Web App.
 -   **PDF Deployment**: Optimizations for running Puppeteer on Vercel serverless functions.
 -   **UI Refinement**: Tailwind CSS updates for better responsiveness and aesthetics.
 

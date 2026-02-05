@@ -1,15 +1,12 @@
 "use server";
 
 import { sheetService, Advisor, HomeroomReport } from "@/lib/google-sheets";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { driveService } from "@/lib/google-drive";
 
 export async function getAdvisorsAction(year: number): Promise<Advisor[]> {
-    console.log(`Fetching advisors for year: ${year}...`);
     try {
         await sheetService.connect();
         const advisors = await sheetService.getAdvisors(year);
-        console.log(`Fetched ${advisors.length} advisors.`);
         return advisors;
     } catch (error) {
         console.error("Error in getAdvisorsAction:", error);
@@ -18,28 +15,25 @@ export async function getAdvisorsAction(year: number): Promise<Advisor[]> {
 }
 
 export async function saveReportAction(report: Omit<HomeroomReport, 'id' | 'timestamp'>): Promise<string> {
-    console.log("Saving report...");
     await sheetService.connect();
     try {
         const year = parseInt(report.academicYear);
-        
+
         if (!isNaN(year)) {
             const allAdvisors = await sheetService.getAdvisors(year);
-            const matchedAdvisors = allAdvisors.filter(a => 
+            const matchedAdvisors = allAdvisors.filter(a =>
                 a.classLevel === report.classLevel &&
-                a.room === report.room && 
+                a.room === report.room &&
                 a.department === report.department
             );
 
             if (matchedAdvisors.length > 0) {
                 const combinedNames = matchedAdvisors.map(a => a.name).join(" และ ");
-                
                 report.advisorName = combinedNames;
-                console.log(`Auto-filled advisors: ${combinedNames}`);
             }
         }
     } catch (error) {
-        console.error("Error auto-filling co-advisors (using original input):", error);
+        console.error("Error auto-filling co-advisors:", error);
     }
     return sheetService.saveReport(report);
 }
@@ -50,34 +44,33 @@ export async function getReportsAction(): Promise<HomeroomReport[]> {
 }
 
 export async function uploadPhotosAction(formData: FormData): Promise<string[]> {
-    const files = formData.getAll("files") as File[];
-    const uploadedUrls: string[] = [];
-
-    if (!files || files.length === 0) return [];
-
-    const uploadDir = path.join(process.cwd(), "public/uploads");
-
-    // Ensure directory exists
     try {
-        await mkdir(uploadDir, { recursive: true });
-    } catch (e) {
-        // Ignore if exists
-    }
+        const files = formData.getAll("files") as File[];
+        const uploadedUrls: string[] = [];
 
-    for (const file of files) {
-        const buffer = Buffer.from(await file.arrayBuffer());
-        // Clean filename: remove non-ascii or spaces to be safe
-        const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-        const filename = `${Date.now()}-${safeName}`;
-        const filepath = path.join(uploadDir, filename);
-
-        try {
-            await writeFile(filepath, buffer);
-            uploadedUrls.push(`/uploads/${filename}`);
-        } catch (error) {
-            console.error(`Error uploading ${file.name}:`, error);
+        if (!files || files.length === 0) {
+            return [];
         }
-    }
 
-    return uploadedUrls;
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+
+            try {
+                const driveLink = await driveService.uploadFile(file);
+
+                if (driveLink) {
+                    uploadedUrls.push(driveLink);
+                } else {
+                    console.error(`[Upload] Failed to get URL for: ${file.name}`);
+                }
+            } catch (error) {
+                console.error(`[Upload] Exception uploading ${file.name}:`, error);
+            }
+        }
+
+        return uploadedUrls;
+    } catch (error) {
+        console.error("[Upload] Error in uploadPhotosAction:", error);
+        throw error;
+    }
 }
