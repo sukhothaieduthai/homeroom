@@ -3,8 +3,6 @@
 import { useState, useEffect } from "react";
 import { HomeroomReport } from "@/lib/google-sheets";
 import { getReportsAction } from "@/app/actions";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import { DownloadIcon, Image as ImageIcon, Filter } from "lucide-react";
 
 export default function ReportView() {
@@ -14,7 +12,7 @@ export default function ReportView() {
     useEffect(() => {
         async function fetchReports() {
             const data = await getReportsAction();
-            
+
             data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
             setReports(data);
@@ -24,32 +22,44 @@ export default function ReportView() {
 
     const availableTerms = Array.from(new Set(reports.map(r => `${r.term}/${r.academicYear}`))).sort();
 
-    const filteredReports = selectedTerm === "all" 
-        ? reports 
+    const filteredReports = selectedTerm === "all"
+        ? reports
         : reports.filter(r => `${r.term}/${r.academicYear}` === selectedTerm);
 
-    const handleExportPDF = () => {
-        const doc = new jsPDF();
-        doc.text(`Homeroom Report (${selectedTerm === "all" ? "All" : selectedTerm})`, 14, 20);
+    const handleExportPDF = async () => {
+        try {
+            const payload = {
+                mode: 'summary',
+                data: {
+                    term: selectedTerm === "all" ? "All" : selectedTerm.split('/')[0],
+                    academicYear: selectedTerm === "all" ? "" : selectedTerm.split('/')[1],
+                    reports: filteredReports,
+                    photos: [] // Summary doesn't need photos
+                }
+            };
 
-        const tableData = filteredReports.map(r => [
-            r.date,
-            r.week,
-            r.advisorName,
-            r.department,
-            r.classLevel + " " + r.room,
-            r.topic,
-            `${r.presentStudents}/${r.totalStudents}`,
-            r.photoUrl ? "Yes" : "No"
-        ]);
+            const response = await fetch('/api/pdf', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
 
-        autoTable(doc, {
-            head: [['Date', 'Week', 'Advisor', 'Dept', 'Class', 'Topic', 'Stats', 'Pic']],
-            body: tableData,
-            startY: 30,
-        });
+            if (!response.ok) throw new Error("Failed to generate PDF");
 
-        doc.save(`homeroom-summary-${selectedTerm === "all" ? "all" : selectedTerm.replace('/', '-')}.pdf`);
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `homeroom-summary-${selectedTerm === "all" ? "all" : selectedTerm.replace('/', '-')}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+        } catch (error) {
+            console.error("Export failed", error);
+            alert("เกิดข้อผิดพลาดในการสร้าง PDF");
+        }
     };
 
     return (
@@ -57,10 +67,10 @@ export default function ReportView() {
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="flex items-center gap-4 w-full md:w-auto">
                     <h2 className="text-xl font-semibold text-gray-800 whitespace-nowrap">สรุปรายงาน</h2>
-                    
+
                     <div className="relative flex items-center">
                         <Filter className="absolute left-3 text-black" size={16} />
-                        <select 
+                        <select
                             value={selectedTerm}
                             onChange={(e) => setSelectedTerm(e.target.value)}
                             className="pl-9 pr-4 py-2 border border-gray-400 rounded-md bg-white text-sm text-black font-medium focus:outline-none focus:ring-2 focus:ring-green-500 cursor-pointer hover:bg-gray-50"
@@ -130,9 +140,9 @@ export default function ReportView() {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
                                         {report.photoUrl ? (
-                                            <a 
-                                                href={report.photoUrl} 
-                                                target="_blank" 
+                                            <a
+                                                href={report.photoUrl}
+                                                target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 hover:underline"
                                             >

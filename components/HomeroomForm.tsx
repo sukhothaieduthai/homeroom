@@ -11,11 +11,11 @@ export default function HomeroomForm() {
     const currentYearAD = new Date().getFullYear();
     const currentYearBE = currentYearAD + 543;
     const years = [
+        currentYearBE - 2,
         currentYearBE - 1,
         currentYearBE,
         currentYearBE + 1,
         currentYearBE + 2,
-        currentYearBE + 3,
     ];
 
     const [term, setTerm] = useState("2");

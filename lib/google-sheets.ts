@@ -5,10 +5,10 @@ import { JWT } from 'google-auth-library';
 export interface Advisor {
     id: string;
     name: string;
-    year: number; 
+    year: number;
     department: string;
     classLevel: string;
-    room: string; 
+    room: string;
 }
 
 export interface HomeroomReport {
@@ -32,7 +32,9 @@ export interface HomeroomReport {
 // Config
 const SHEET_ID = process.env.GOOGLE_SHEET_ID || "";
 const GOOGLE_SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || "";
-const GOOGLE_PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n') || "";
+// Handle private key with robust newline replacement
+const rawKey = process.env.GOOGLE_PRIVATE_KEY || "";
+const GOOGLE_PRIVATE_KEY = rawKey.includes("\\n") ? rawKey.replace(/\\n/g, '\n') : rawKey;
 
 // Mock Data
 const MOCK_ADVISORS: Advisor[] = [
@@ -69,6 +71,7 @@ export class GoogleSheetService {
             this.isConnected = true;
         } catch (error) {
             console.error("Failed to connect to Google Sheets:", error);
+            this.doc = null; // Ensure doc is null if connection fails
         }
     }
 
@@ -137,13 +140,13 @@ export class GoogleSheetService {
                 try {
                     sheet = await this.doc.addSheet({ title: 'Reports' });
                     await sheet.setHeaderRow([
-                        'id', 'term', 'academicYear', 'week', 'date', 
-                        'advisorName', 'department', 'classLevel', 'room', 
-                        'topic', 'totalStudents', 'presentStudents', 
+                        'id', 'term', 'academicYear', 'week', 'date',
+                        'advisorName', 'department', 'classLevel', 'room',
+                        'topic', 'totalStudents', 'presentStudents',
                         'absentStudents', 'photoUrl', 'timestamp'
                     ]);
                 } catch (e) {
-                   console.error("Error creating sheet:", e);
+                    console.error("Error creating sheet:", e);
                 }
             }
 

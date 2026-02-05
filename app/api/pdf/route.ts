@@ -7,14 +7,36 @@ export async function POST(req: NextRequest) {
         const { mode, data } = body;
         const { term, academicYear, advisor, reports, photos } = data;
 
+        // --- Font Loading (Server-Side) ---
+        // Fetch fonts to embed directly, avoiding "headless" loading issues
+        const fontRegularRes = await fetch('https://github.com/google/fonts/raw/main/ofl/sarabun/Sarabun-Regular.ttf');
+        const fontBoldRes = await fetch('https://github.com/google/fonts/raw/main/ofl/sarabun/Sarabun-Bold.ttf');
+
+        const fontRegularParams = await fontRegularRes.arrayBuffer();
+        const fontBoldParams = await fontBoldRes.arrayBuffer();
+
+        const base64Regular = Buffer.from(fontRegularParams).toString('base64');
+        const base64Bold = Buffer.from(fontBoldParams).toString('base64');
+
         // --- HTML Construction Helpers ---
 
         const getHead = () => `
             <head>
-                <link rel="preconnect" href="https://fonts.googleapis.com">
-                <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-                <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
                 <style>
+                    /* Embed Fonts */
+                    @font-face {
+                        font-family: 'Sarabun';
+                        src: url(data:font/ttf;base64,${base64Regular}) format('truetype');
+                        font-weight: 400;
+                        font-style: normal;
+                    }
+                    @font-face {
+                        font-family: 'Sarabun';
+                        src: url(data:font/ttf;base64,${base64Bold}) format('truetype');
+                        font-weight: 700;
+                        font-style: normal;
+                    }
+
                     @page {
                         size: A4;
                         margin: 0;
@@ -213,12 +235,55 @@ export async function POST(req: NextRequest) {
             return html;
         };
 
+        const getSummaryHTML = () => `
+            <div class="page">
+                <div class="center table-title">สรุปราายงานการกิจกรรมโฮมรูม</div>
+                <div class="center table-subtitle">ภาคเรียนที่ ${term} ปีการศึกษา ${academicYear || ''}</div>
+                <div class="center" style="font-size: 16pt; margin-bottom: 20px;">วิทยาลัยอาชีวศึกษาสุโขทัย</div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 12%">Date</th>
+                            <th style="width: 8%">Week</th>
+                            <th style="width: 20%">Advisor</th>
+                            <th style="width: 15%">Dept</th>
+                            <th style="width: 10%">Class</th>
+                            <th style="width: 20%">Topic</th>
+                            <th style="width: 10%">Stats</th>
+                            <th style="width: 5%">Pic</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${reports.length > 0 ? reports.map((r: any) => `
+                            <tr>
+                                <td class="center" style="font-size: 12pt">${r.date}</td>
+                                <td class="center" style="font-size: 12pt">${r.week}</td>
+                                <td style="font-size: 12pt">${r.advisorName}</td>
+                                <td style="font-size: 12pt">${r.department}</td>
+                                <td class="center" style="font-size: 12pt">${r.classLevel} ${r.room}</td>
+                                <td style="font-size: 12pt">${r.topic}</td>
+                                <td class="center" style="font-size: 12pt">${r.presentStudents}/${r.totalStudents}</td>
+                                <td class="center" style="font-size: 12pt">${r.photoUrl ? 'Yes' : 'No'}</td>
+                            </tr>
+                        `).join('') : `
+                            <tr><td colspan="8" class="center">ไม่พบรายงาน</td></tr>
+                        `}
+                    </tbody>
+                </table>
+            </div>
+        `;
+
         // --- Assemble HTML ---
         let contentHTML = '';
 
-        if (mode === 'all' || mode === 'cover') contentHTML += getCoverHTML();
-        if (mode === 'all' || mode === 'table') contentHTML += getTableHTML();
-        if ((mode === 'all' || mode === 'photos') && photos && photos.length > 0) contentHTML += getPhotosHTML();
+        if (mode === 'summary') {
+            contentHTML = getSummaryHTML();
+        } else {
+            if (mode === 'all' || mode === 'cover') contentHTML += getCoverHTML();
+            if (mode === 'all' || mode === 'table') contentHTML += getTableHTML();
+            if ((mode === 'all' || mode === 'photos') && photos && photos.length > 0) contentHTML += getPhotosHTML();
+        }
 
         const fullHTML = `
             <!DOCTYPE html>
