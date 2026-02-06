@@ -135,39 +135,60 @@ export class GoogleSheetService {
         }
 
         try {
+            const headers = [
+                'id', 'term', 'academicYear', 'week', 'date', 
+                'advisorName', 'department', 'classLevel', 'room', 
+                'topic', 'totalStudents', 'presentStudents', 
+                'absentStudents', 'photoUrl', 'timestamp'
+            ];
+
+            const rowData = {
+                id: newReport.id,
+                term: newReport.term,
+                academicYear: newReport.academicYear,
+                week: newReport.week,
+                date: newReport.date,
+                advisorName: newReport.advisorName,
+                department: newReport.department,
+                classLevel: newReport.classLevel,
+                room: newReport.room,
+                topic: newReport.topic,
+                totalStudents: newReport.totalStudents,
+                presentStudents: newReport.presentStudents,
+                absentStudents: newReport.absentStudents,
+                photoUrl: newReport.photoUrl || '',
+                timestamp: newReport.timestamp,
+            };
+
+
             let sheet = this.doc.sheetsByTitle['Reports'];
             if (!sheet) {
                 try {
                     sheet = await this.doc.addSheet({ title: 'Reports' });
-                    await sheet.setHeaderRow([
-                        'id', 'term', 'academicYear', 'week', 'date',
-                        'advisorName', 'department', 'classLevel', 'room',
-                        'topic', 'totalStudents', 'presentStudents',
-                        'absentStudents', 'photoUrl', 'timestamp'
-                    ]);
+                    await sheet.setHeaderRow(headers);
                 } catch (e) {
                     console.error("Error creating sheet:", e);
                 }
             }
 
             if (sheet) {
-                await sheet.addRow({
-                    id: newReport.id,
-                    term: newReport.term,
-                    academicYear: newReport.academicYear,
-                    week: newReport.week,
-                    date: newReport.date,
-                    advisorName: newReport.advisorName,
-                    department: newReport.department,
-                    classLevel: newReport.classLevel,
-                    room: newReport.room,
-                    topic: newReport.topic,
-                    totalStudents: newReport.totalStudents,
-                    presentStudents: newReport.presentStudents,
-                    absentStudents: newReport.absentStudents,
-                    photoUrl: newReport.photoUrl || '',
-                    timestamp: newReport.timestamp,
-                });
+                await sheet.addRow(rowData);
+            }
+
+            const subSheetTitle = `${newReport.term}/${newReport.academicYear}`;
+            let subSheet = this.doc.sheetsByTitle[subSheetTitle];
+
+            if (!subSheet) {
+                try {
+                    subSheet = await this.doc.addSheet({ title: subSheetTitle });
+                    await subSheet.setHeaderRow(headers);
+                } catch (e) {
+                    subSheet = this.doc.sheetsByTitle[subSheetTitle];
+                }
+            }
+
+            if (subSheet) {
+                await subSheet.addRow(rowData);
             }
 
             return newReport.id;

@@ -13,7 +13,15 @@ export default function ReportView() {
         async function fetchReports() {
             const data = await getReportsAction();
 
-            data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            data.sort((a, b) => {
+                const dateComparison = new Date(b.date).getTime() - new Date(a.date).getTime();
+                
+                if (dateComparison === 0 && a.timestamp && b.timestamp) {
+                    return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+                }
+                
+                return dateComparison;
+            });
 
             setReports(data);
         }
@@ -34,7 +42,7 @@ export default function ReportView() {
                     term: selectedTerm === "all" ? "All" : selectedTerm.split('/')[0],
                     academicYear: selectedTerm === "all" ? "" : selectedTerm.split('/')[1],
                     reports: filteredReports,
-                    photos: [] // Summary doesn't need photos
+                    photos: [] 
                 }
             };
 
@@ -73,7 +81,7 @@ export default function ReportView() {
                         <select
                             value={selectedTerm}
                             onChange={(e) => setSelectedTerm(e.target.value)}
-                            className="pl-9 pr-4 py-2 border border-gray-400 rounded-md bg-white text-sm text-black font-medium focus:outline-none focus:ring-2 focus:ring-green-500 cursor-pointer hover:bg-gray-50"
+                            className="pl-9 pr-4 py-2 border border-gray-400 rounded-md bg-white text-sm text-black font-semibold focus:outline-none focus:ring-2 focus:ring-green-500 cursor-pointer hover:bg-gray-50"
                         >
                             <option value="all">ดูทั้งหมด</option>
                             <option disabled>──────────</option>
