@@ -44,7 +44,7 @@ export default function FullReport() {
         const rigorousFiltered = allReports.filter(r =>
             (r.academicYear === academicYear || !r.academicYear) &&
             (r.term === term || !r.term) &&
-            r.advisorName === selectedAdvisor.name
+            r.advisorName?.includes(selectedAdvisor.name)
         );
         setFilteredReports(rigorousFiltered);
 
@@ -182,31 +182,10 @@ export default function FullReport() {
         <div className="space-y-6">
             <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">ระบบพิมพ์รายงาน (Print)</h2>
 
-            {/* View Navigation Tabs */}
-            <div className="flex gap-2 w-full overflow-x-auto pb-2">
-                <button
-                    onClick={() => setViewMode("cover")}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-bold transition-all border ${viewMode === "cover" ? "bg-blue-600 text-white border-blue-600 shadow-md" : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"}`}
-                >
-                    <FileTextIcon size={20} /> หน้าปก
-                </button>
-                <button
-                    onClick={() => setViewMode("table")}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-bold transition-all border ${viewMode === "table" ? "bg-blue-600 text-white border-blue-600 shadow-md" : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"}`}
-                >
-                    <TableIcon size={20} /> ตาราง
-                </button>
-                <button
-                    onClick={() => setViewMode("photos")}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-bold transition-all border ${viewMode === "photos" ? "bg-blue-600 text-white border-blue-600 shadow-md" : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"}`}
-                >
-                    <ImageIcon size={20} /> รูปภาพ
-                </button>
-            </div>
-
-            {/* Filters */}
-            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+            {/* Advisor Selector */}
+            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                <AdvisorSelector year={Number(academicYear)} onAdvisorSelect={handleAdvisorSelect} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
                     <div className="flex flex-col gap-2">
                         <label className="text-sm font-medium text-gray-700">ภาคเรียนที่</label>
                         <select
@@ -230,21 +209,46 @@ export default function FullReport() {
                         </select>
                     </div>
                 </div>
-
-                <AdvisorSelector year={Number(academicYear)} onAdvisorSelect={handleAdvisorSelect} />
             </div>
 
-            {/* Action Bar (Download) */}
-            <div className="flex justify-end bg-gray-50 p-4 rounded-lg border border-gray-200">
+
+            {/* Action Bar (Download) - Top */}
+            {selectedAdvisor && (
+                <div className="flex justify-end">
+                    <button
+                        onClick={handleExport}
+                        disabled={isGenerating || filteredReports.length === 0}
+                        className="flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-all font-semibold shadow-md"
+                    >
+                        <DownloadIcon size={20} />
+                        {isGenerating ? "กำลังสร้าง PDF..." : "ดาวน์โหลด PDF"}
+                    </button>
+                </div>
+            )}
+
+            {/* View Tabs */}
+            <div className="flex gap-2 w-full overflow-x-auto pb-2">
                 <button
-                    onClick={handleExport}
-                    disabled={!selectedAdvisor || isGenerating}
-                    className="flex items-center gap-3 bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-md transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed shadow-lg font-bold text-lg"
+                    onClick={() => setViewMode("cover")}
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-bold transition-all border ${viewMode === "cover" ? "bg-blue-600 text-white border-blue-600 shadow-md" : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"}`}
                 >
-                    <DownloadIcon size={24} />
-                    {getButtonLabel()}
+                    <FileTextIcon size={20} /> หน้าปก
+                </button>
+                <button
+                    onClick={() => setViewMode("table")}
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-bold transition-all border ${viewMode === "table" ? "bg-blue-600 text-white border-blue-600 shadow-md" : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"}`}
+                >
+                    <TableIcon size={20} /> ตาราง
+                </button>
+                <button
+                    onClick={() => setViewMode("photos")}
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-bold transition-all border ${viewMode === "photos" ? "bg-blue-600 text-white border-blue-600 shadow-md" : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"}`}
+                >
+                    <ImageIcon size={20} /> รูปภาพ
                 </button>
             </div>
+
+
 
             {/* View Content */}
             <div className="bg-white border text-gray-900 border-gray-200 shadow-sm rounded-lg min-h-[500px] p-8 flex justify-center bg-gray-50">
@@ -280,47 +284,73 @@ export default function FullReport() {
                         )}
 
                         {viewMode === "table" && (
-                            <div className="w-full">
-                                <h2 className="text-2xl font-bold text-center mb-6">แบบบันทึกกิจกรรมโฮมรูม</h2>
-                                <div className="mb-4 text-base flex justify-between px-4">
-                                    <div>
-                                        <p><strong>ระดับชั้น:</strong> {selectedAdvisor.classLevel}</p>
-                                        <p><strong>สาขาวิชา:</strong> {selectedAdvisor.department}</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p><strong>ห้อง:</strong> {selectedAdvisor.room}</p>
-                                        <p><strong>ครูที่ปรึกษา:</strong> {selectedAdvisor.name}</p>
+                            <div className="w-full max-w-4xl mx-auto">
+                                {/* Header Section - Logo Left, Text Center */}
+                                <div className="flex items-start mb-3">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                        src="/sukhothailogo.png"
+                                        alt="Logo"
+                                        className="w-20 h-20 mr-4 flex-shrink-0"
+                                    />
+                                    <div className="flex-1 text-center pt-1">
+                                        <h1 className="text-base font-bold leading-tight">แบบบันทึกกิจกรรมโฮมรูม ภาคเรียนที่ {term}/{academicYear}</h1>
+                                        <p className="text-sm mt-0.5">วิทยาลัยอาชีวศึกษาสุโขทัย</p>
                                     </div>
                                 </div>
-                                <table className="w-full border-collapse border border-black text-sm">
+
+                                {/* Class Info - Single Line */}
+                                <div className="text-xs mb-1">
+                                    <span className="font-normal">ระดับชั้น</span> {selectedAdvisor.classLevel}
+                                    {'   '}
+                                    <span className="font-normal">สาขาวิชา</span> {selectedAdvisor.department}
+                                    {'   '}
+                                    <span className="font-normal">ห้อง</span> {selectedAdvisor.room}
+                                </div>
+
+                                {/* Advisor Info */}
+                                <div className="text-xs mb-3">
+                                    <span className="font-normal">ครูที่ปรึกษา</span> {selectedAdvisor.name}
+                                </div>
+                                {/* Table */}
+                                <table className="w-full border-collapse border border-black">
                                     <thead>
-                                        <tr className="bg-gray-100 text-center">
-                                            <th className="border border-black p-3 w-[20%]" rowSpan={2}>สัปดาห์ที่/วัน/เวลา<br />สถานที่อบรม</th>
-                                            <th className="border border-black p-3" rowSpan={2}>เรื่อง/กิจกรรม/แนวทาง/เจ้าหน้าที่</th>
-                                            <th className="border border-black p-3" colSpan={3}>ข้อมูลนักเรียน/นักศึกษา</th>
+                                        <tr>
+                                            <th className="border border-black p-2 text-xs font-medium bg-gray-100" rowSpan={2}>
+                                                สัปดาห์ที่<br />วัน/เวลา<br />สถานที่อบรม
+                                            </th>
+                                            <th className="border border-black p-2 text-xs font-medium bg-gray-100" rowSpan={2}>
+                                                เรื่อง/กิจกรรม/แนวทาง/เจ้าหน้าที่
+                                            </th>
+                                            <th className="border border-black p-2 text-xs font-medium bg-gray-100" colSpan={3}>
+                                                ข้อมูลนักเรียน/นักศึกษา
+                                            </th>
                                         </tr>
-                                        <tr className="bg-gray-100 text-center">
-                                            <th className="border border-black p-2 w-[8%]">จำนวน</th>
-                                            <th className="border border-black p-2 w-[8%]">มา</th>
-                                            <th className="border border-black p-2 w-[8%]">ขาด</th>
+                                        <tr>
+                                            <th className="border border-black p-1 text-xs font-medium bg-gray-100 w-16">จำนวน</th>
+                                            <th className="border border-black p-1 text-xs font-medium bg-gray-100 w-16">มา</th>
+                                            <th className="border border-black p-1 text-xs font-medium bg-gray-100 w-16">ขาด</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {filteredReports.length > 0 ? filteredReports.map(r => (
+                                        {filteredReports.length > 0 ? filteredReports.map((r, idx) => (
                                             <tr key={r.id}>
-                                                <td className="border border-black p-2 text-sm align-top">
-                                                    <div className="font-medium">สัปดาห์ที่ {r.week}</div>
-                                                    <div className="text-xs text-gray-700 mt-1">{r.date}</div>
-                                                    <div className="text-xs text-gray-600 mt-1">เวลา 13.00-14.00 น.</div>
+                                                <td className="border border-black p-2 align-top text-[10px]">
+                                                    <div className="text-blue-700 font-medium">สัปดาห์ที่ {r.week} ({r.date})</div>
+                                                    <div className="text-gray-600 mt-0.5">เวลา 13.00-14.00 น.</div>
                                                 </td>
-                                                <td className="border border-black p-2 align-top">{r.topic}</td>
-                                                <td className="border border-black p-2 text-center align-top">{r.totalStudents}</td>
-                                                <td className="border border-black p-2 text-center align-top">{r.presentStudents}</td>
-                                                <td className="border border-black p-2 text-center align-top">{r.absentStudents}</td>
+                                                <td className="border border-black p-2 align-top text-[10px] leading-relaxed">
+                                                    {r.topic}
+                                                </td>
+                                                <td className="border border-black p-1 text-center text-[10px]">{r.totalStudents}</td>
+                                                <td className="border border-black p-1 text-center text-[10px]">{r.presentStudents}</td>
+                                                <td className="border border-black p-1 text-center text-[10px]">{r.absentStudents}</td>
                                             </tr>
                                         )) : (
                                             <tr>
-                                                <td colSpan={5} className="border border-black p-4 text-center text-gray-500">ไม่พบรายงาน</td>
+                                                <td colSpan={5} className="border border-black p-6 text-center text-gray-500">
+                                                    ไม่พบรายงาน
+                                                </td>
                                             </tr>
                                         )}
                                     </tbody>
