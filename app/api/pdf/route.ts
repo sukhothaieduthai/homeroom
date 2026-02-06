@@ -200,7 +200,6 @@ export async function POST(req: NextRequest) {
         const getTableHTML = () => {
             return `
             <div class="page">
-                <!-- Header Section - Logo Left, Text Center -->
                 <div style="display: flex; align-items: flex-start; margin-bottom: 15px;">
                     <img src="${logoBase64}" alt="Logo" style="width: 80px; height: 80px; margin-right: 15px; flex-shrink: 0;" />
                     <div style="flex: 1; text-align: center; padding-top: 5px;">
@@ -209,7 +208,6 @@ export async function POST(req: NextRequest) {
                     </div>
                 </div>
 
-                <!-- Class Info - Single Line -->
                 <div style="font-size: 14pt; margin-bottom: 5px;">
                     <span style="font-weight: normal;">ระดับชั้น</span> ${advisor.classLevel}
                     &nbsp;&nbsp;&nbsp;
@@ -218,12 +216,10 @@ export async function POST(req: NextRequest) {
                     <span style="font-weight: normal;">ห้อง</span> ${advisor.room}
                 </div>
                 
-                <!-- Advisor Info -->
                 <div style="font-size: 14pt; margin-bottom: 15px;">
                     <span style="font-weight: normal;">ครูที่ปรึกษา</span> ${advisor.name}
                 </div>
 
-                <!-- Table -->
                 <table style="width: 100%; border-collapse: collapse; border: 1px solid black;">
                     <thead>
                         <tr>
@@ -305,7 +301,7 @@ export async function POST(req: NextRequest) {
         const getSummaryHTML = () => `
             <div class="page">
                 <div class="center table-title">สรุปราายงานการกิจกรรมโฮมรูม</div>
-                <div class="center table-subtitle">ภาคเรียนที่ ${term} ปีการศึกษา ${academicYear || ''}</div>
+                <div class="center table-subtitle">${term === 'All' ? 'ทุกภาคเรียนและทุกปีการศึกษา' : `ภาคเรียนที่ ${term} ปีการศึกษา ${academicYear || ''}`}</div>
                 <div class="center" style="font-size: 16pt; margin-bottom: 20px;">วิทยาลัยอาชีวศึกษาสุโขทัย</div>
 
                 <table>
