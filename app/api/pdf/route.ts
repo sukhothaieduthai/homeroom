@@ -7,14 +7,73 @@ export async function POST(req: NextRequest) {
         const { mode, data } = body;
         const { term, academicYear, advisor, reports, photos } = data;
 
+        // --- Logo Loading (Server-Side) ---
+        // Fetch logo from public folder and convert to base64
+        const fs = require('fs');
+        const path = require('path');
+        const logoPath = path.join(process.cwd(), 'public', 'sukhothailogo.png');
+        let logoBase64 = '';
+        try {
+            const logoBuffer = fs.readFileSync(logoPath);
+            logoBase64 = `data:image/png;base64,${logoBuffer.toString('base64')}`;
+        } catch (e) {
+            console.error('Failed to load logo:', e);
+            // Fallback to placeholder if logo not found
+            logoBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+        }
+
+        // --- Font Loading (Server-Side) ---
+        // Fetch fonts to embed directly, avoiding "headless" loading issues
+        let base64Regular = '';
+        let base64Bold = '';
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
+            const fontRegularRes = await fetch('https://github.com/google/fonts/raw/main/ofl/sarabun/Sarabun-Regular.ttf', {
+                signal: controller.signal
+            });
+            const fontBoldRes = await fetch('https://github.com/google/fonts/raw/main/ofl/sarabun/Sarabun-Bold.ttf', {
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+
+            const fontRegularParams = await fontRegularRes.arrayBuffer();
+            const fontBoldParams = await fontBoldRes.arrayBuffer();
+
+            base64Regular = Buffer.from(fontRegularParams).toString('base64');
+            base64Bold = Buffer.from(fontBoldParams).toString('base64');
+        } catch (e) {
+            console.error('Failed to load fonts, PDF will use fallback fonts:', e);
+            // Leave base64Regular and base64Bold as empty strings
+            // PDF will fallback to browser default fonts
+        }
+
         // --- HTML Construction Helpers ---
 
         const getHead = () => `
             <head>
-                <link rel="preconnect" href="https://fonts.googleapis.com">
-                <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-                <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
                 <style>
+                    /* Embed Fonts */
+                    ${base64Regular ? `
+                    @font-face {
+                        font-family: 'Sarabun';
+                        src: url(data:font/ttf;base64,${base64Regular}) format('truetype');
+                        font-weight: 400;
+                        font-style: normal;
+                    }
+                    ` : ''}
+                    ${base64Bold ? `
+                    @font-face {
+                        font-family: 'Sarabun';
+                        src: url(data:font/ttf;base64,${base64Bold}) format('truetype');
+                        font-weight: 700;
+                        font-style: normal;
+                    }
+                    ` : ''}
+
                     @page {
                         size: A4;
                         margin: 0;
@@ -138,48 +197,78 @@ export async function POST(req: NextRequest) {
             </div>
         `;
 
-        const getTableHTML = () => `
+        const getTableHTML = () => {
+            return `
             <div class="page">
-                <div class="center table-title">แบบบันทึกกิจกรรมโฮมรูม ภาคเรียนที่ ${term}/${academicYear}</div>
-                <div class="center table-subtitle">วิทยาลัยอาชีวศึกษาสุโขทัย</div>
-                
-                <div class="header-info">
-                    <div style="width: 100%; display: flex; justify-content: space-between;">
-                        <span>ระดับชั้น ${advisor.classLevel}</span>
-                        <span>สาขาวิชา ${advisor.department}</span>
-                        <span>ห้อง ${advisor.room}</span>
-                    </div>
-                    <div style="width: 100%; margin-top: 10px;">
-                        ครูที่ปรึกษา ${advisor.name}
+                <!-- Header Section - Logo Left, Text Center -->
+                <div style="display: flex; align-items: flex-start; margin-bottom: 15px;">
+                    <img src="${logoBase64}" alt="Logo" style="width: 80px; height: 80px; margin-right: 15px; flex-shrink: 0;" />
+                    <div style="flex: 1; text-align: center; padding-top: 5px;">
+                        <h1 style="font-size: 18pt; font-weight: bold; margin: 0; line-height: 1.2;">แบบบันทึกกิจกรรมโฮมรูม ภาคเรียนที่ ${term}/${academicYear}</h1>
+                        <p style="font-size: 16pt; margin: 5px 0 0 0;">วิทยาลัยอาชีวศึกษาสุโขทัย</p>
                     </div>
                 </div>
 
-                <table>
+                <!-- Class Info - Single Line -->
+                <div style="font-size: 14pt; margin-bottom: 5px;">
+                    <span style="font-weight: normal;">ระดับชั้น</span> ${advisor.classLevel}
+                    &nbsp;&nbsp;&nbsp;
+                    <span style="font-weight: normal;">สาขาวิชา</span> ${advisor.department}
+                    &nbsp;&nbsp;&nbsp;
+                    <span style="font-weight: normal;">ห้อง</span> ${advisor.room}
+                </div>
+                
+                <!-- Advisor Info -->
+                <div style="font-size: 14pt; margin-bottom: 15px;">
+                    <span style="font-weight: normal;">ครูที่ปรึกษา</span> ${advisor.name}
+                </div>
+
+                <!-- Table -->
+                <table style="width: 100%; border-collapse: collapse; border: 1px solid black;">
                     <thead>
                         <tr>
-                            <th style="width: 20%">สัปดาห์ที่<br>วัน/เวลา</th>
-                            <th>เรื่องที่อบรม</th>
-                            <th style="width: 10%">ทั้งหมด</th>
-                            <th style="width: 10%">มา</th>
-                            <th style="width: 10%">ขาด</th>
+                            <th style="border: 1px solid black; padding: 8px; font-size: 14pt; font-weight: bold; background-color: #f0f0f0; text-align: center;" rowspan="2">
+                                สัปดาห์ที่<br/>วัน/เวลา<br/>สถานที่อบรม
+                            </th>
+                            <th style="border: 1px solid black; padding: 8px; font-size: 14pt; font-weight: bold; background-color: #f0f0f0; text-align: center;" rowspan="2">
+                                เรื่อง/กิจกรรม/แนวทาง/เจ้าหน้าที่
+                            </th>
+                            <th style="border: 1px solid black; padding: 8px; font-size: 14pt; font-weight: bold; background-color: #f0f0f0; text-align: center;" colspan="3">
+                                ข้อมูลนักเรียน/นักศึกษา
+                            </th>
+                        </tr>
+                        <tr>
+                            <th style="border: 1px solid black; padding: 4px; font-size: 14pt; font-weight: bold; background-color: #f0f0f0; text-align: center; width: 60px;">จำนวน</th>
+                            <th style="border: 1px solid black; padding: 4px; font-size: 14pt; font-weight: bold; background-color: #f0f0f0; text-align: center; width: 60px;">มา</th>
+                            <th style="border: 1px solid black; padding: 4px; font-size: 14pt; font-weight: bold; background-color: #f0f0f0; text-align: center; width: 60px;">ขาด</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${reports.length > 0 ? reports.map((r: any) => `
                             <tr>
-                                <td class="center">Week ${r.week}<br><span style="font-size: 14pt; color: #666;">${r.date}</span></td>
-                                <td>${r.topic}</td>
-                                <td class="center">${r.totalStudents}</td>
-                                <td class="center">${r.presentStudents}</td>
-                                <td class="center">${r.absentStudents}</td>
+                                <td style="border: 1px solid black; padding: 8px; vertical-align: top; font-size: 12pt;">
+                                    <div style="color: #1d4ed8; font-weight: 500;">สัปดาห์ที่ ${r.week} (${r.date})</div>
+                                    <div style="color: #666; margin-top: 2px; font-size: 11pt;">เวลา 13.00-14.00 น.</div>
+                                </td>
+                                <td style="border: 1px solid black; padding: 8px; vertical-align: top; font-size: 12pt; line-height: 1.4;">
+                                    ${r.topic}
+                                </td>
+                                <td style="border: 1px solid black; padding: 4px; text-align: center; font-size: 12pt;">${r.totalStudents}</td>
+                                <td style="border: 1px solid black; padding: 4px; text-align: center; font-size: 12pt;">${r.presentStudents}</td>
+                                <td style="border: 1px solid black; padding: 4px; text-align: center; font-size: 12pt;">${r.absentStudents}</td>
                             </tr>
                         `).join('') : `
-                            <tr><td colspan="5" class="center">ไม่พบรายงาน</td></tr>
+                            <tr>
+                                <td colspan="5" style="border: 1px solid black; padding: 20px; text-align: center; color: #999;">
+                                    ไม่พบรายงาน
+                                </td>
+                            </tr>
                         `}
                     </tbody>
                 </table>
             </div>
         `;
+        };
 
         const getPhotosHTML = () => {
             if (!photos || photos.length === 0) return '';
@@ -213,12 +302,55 @@ export async function POST(req: NextRequest) {
             return html;
         };
 
+        const getSummaryHTML = () => `
+            <div class="page">
+                <div class="center table-title">สรุปราายงานการกิจกรรมโฮมรูม</div>
+                <div class="center table-subtitle">ภาคเรียนที่ ${term} ปีการศึกษา ${academicYear || ''}</div>
+                <div class="center" style="font-size: 16pt; margin-bottom: 20px;">วิทยาลัยอาชีวศึกษาสุโขทัย</div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 12%">Date</th>
+                            <th style="width: 8%">Week</th>
+                            <th style="width: 20%">Advisor</th>
+                            <th style="width: 15%">Dept</th>
+                            <th style="width: 10%">Class</th>
+                            <th style="width: 20%">Topic</th>
+                            <th style="width: 10%">Stats</th>
+                            <th style="width: 5%">Pic</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${reports.length > 0 ? reports.map((r: any) => `
+                            <tr>
+                                <td class="center" style="font-size: 12pt">${r.date}</td>
+                                <td class="center" style="font-size: 12pt">${r.week}</td>
+                                <td style="font-size: 12pt">${r.advisorName}</td>
+                                <td style="font-size: 12pt">${r.department}</td>
+                                <td class="center" style="font-size: 12pt">${r.classLevel} ${r.room}</td>
+                                <td style="font-size: 12pt">${r.topic}</td>
+                                <td class="center" style="font-size: 12pt">${r.presentStudents}/${r.totalStudents}</td>
+                                <td class="center" style="font-size: 12pt">${r.photoUrl ? 'Yes' : 'No'}</td>
+                            </tr>
+                        `).join('') : `
+                            <tr><td colspan="8" class="center">ไม่พบรายงาน</td></tr>
+                        `}
+                    </tbody>
+                </table>
+            </div>
+        `;
+
         // --- Assemble HTML ---
         let contentHTML = '';
 
-        if (mode === 'all' || mode === 'cover') contentHTML += getCoverHTML();
-        if (mode === 'all' || mode === 'table') contentHTML += getTableHTML();
-        if ((mode === 'all' || mode === 'photos') && photos && photos.length > 0) contentHTML += getPhotosHTML();
+        if (mode === 'summary') {
+            contentHTML = getSummaryHTML();
+        } else {
+            if (mode === 'all' || mode === 'cover') contentHTML += getCoverHTML();
+            if (mode === 'all' || mode === 'table') contentHTML += getTableHTML();
+            if ((mode === 'all' || mode === 'photos') && photos && photos.length > 0) contentHTML += getPhotosHTML();
+        }
 
         const fullHTML = `
             <!DOCTYPE html>

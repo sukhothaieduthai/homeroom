@@ -13,6 +13,7 @@
     "clsx": "^2.1.1",
     "google-auth-library": "^10.5.0",
     "google-spreadsheet": "^5.0.2",
+    "googleapis": "^171.2.0",
     "jspdf": "^4.1.0",
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.563.0",
