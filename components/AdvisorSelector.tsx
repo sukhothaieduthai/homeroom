@@ -19,7 +19,7 @@ export default function AdvisorSelector({ year, onAdvisorSelect }: AdvisorSelect
 
     useEffect(() => {
         async function loadAdvisors() {
-            const data = await getAdvisorsAction(year);
+            const data = await getAdvisorsAction();
             setAdvisors(data);
             const uniqueDepts = Array.from(new Set(data.map((a) => a.department)));
             setDepartments(uniqueDepts);

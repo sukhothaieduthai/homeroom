@@ -5,7 +5,6 @@ import { JWT } from 'google-auth-library';
 export interface Advisor {
     id: string;
     name: string;
-    year: number;
     department: string;
     classLevel: string;
     room: string;
@@ -38,10 +37,10 @@ const GOOGLE_PRIVATE_KEY = rawKey.includes("\\n") ? rawKey.replace(/\\n/g, '\n')
 
 // Mock Data
 const MOCK_ADVISORS: Advisor[] = [
-    { id: '1', name: 'ครูสมชาย ใจดี', year: 2568, department: 'เทคโนโลยีสารสนเทศ', classLevel: 'ปวช. 1', room: '1/1' },
-    { id: '1-2', name: 'ครูสมชาย ใจดี', year: 2568, department: 'เทคโนโลยีสารสนเทศ', classLevel: 'ปวช. 3', room: '1/3' },
-    { id: '2', name: 'ครูนิภา รักเรียน', year: 2568, department: 'เทคโนโลยีสารสนเทศ', classLevel: 'ปวช. 2', room: '1/2' },
-    { id: '3', name: 'ครูวิชัย สอนเก่ง', year: 2568, department: 'บัญชี', classLevel: 'ปวช. 1', room: '1/1' },
+    { id: '1', name: 'ครูสมชาย ใจดี', department: 'เทคโนโลยีสารสนเทศ', classLevel: 'ปวช. 1', room: '1/1' },
+    { id: '1-2', name: 'ครูสมชาย ใจดี', department: 'เทคโนโลยีสารสนเทศ', classLevel: 'ปวช. 3', room: '1/3' },
+    { id: '2', name: 'ครูนิภา รักเรียน', department: 'เทคโนโลยีสารสนเทศ', classLevel: 'ปวช. 2', room: '1/2' },
+    { id: '3', name: 'ครูวิชัย สอนเก่ง', department: 'บัญชี', classLevel: 'ปวช. 1', room: '1/1' },
 ];
 
 const MOCK_REPORTS: HomeroomReport[] = [];
@@ -75,21 +74,21 @@ export class GoogleSheetService {
         }
     }
 
-    async getAdvisors(year: number): Promise<Advisor[]> {
+    async getAdvisors(): Promise<Advisor[]> {
         if (!this.isConnected) {
             await this.connect();
         }
 
         if (!this.doc) {
             console.warn("Using Mock Data (Not Connected)");
-            return MOCK_ADVISORS.filter(a => a.year === year);
+            return MOCK_ADVISORS;
         }
 
         try {
             const sheet = this.doc.sheetsByTitle['Advisors'];
             if (!sheet) {
                 console.warn("Sheet 'Advisor' not found. Using Mock Data.");
-                return MOCK_ADVISORS.filter(a => a.year === year);
+                return MOCK_ADVISORS;
             }
 
             const rows = await sheet.getRows();
@@ -98,12 +97,12 @@ export class GoogleSheetService {
                 const room = row.get('ห้อง') || '';
                 const classLevel = row.get('ระดับชั้น') || '';
                 const department = row.get('สาขาวิชา') || '';
+                
                 const id = `${name}-${classLevel}-${room}`.replace(/\s+/g, '-');
 
                 return {
                     id: id || `generated-${index}`,
                     name,
-                    year: year,
                     department,
                     classLevel,
                     room,
@@ -113,7 +112,95 @@ export class GoogleSheetService {
             return advisors;
         } catch (error) {
             console.error("Error fetching advisors:", error);
-            return MOCK_ADVISORS.filter(a => a.year === year);
+            return MOCK_ADVISORS;
+        }
+    }
+
+    async addAdvisor(advisor: Omit<Advisor, 'id'>): Promise<void> {
+        if (!this.isConnected) await this.connect();
+        if (!this.doc) return;
+
+        try {
+            let sheet = this.doc.sheetsByTitle['Advisors'];
+            if (!sheet) {
+                sheet = await this.doc.addSheet({ title: 'Advisors' });
+                // แก้ไข Header ตัดปีการศึกษาออก
+                await sheet.setHeaderRow(['ครูที่ปรึกษา', 'ห้อง', 'ระดับชั้น', 'สาขาวิชา']);
+            }
+
+            await sheet.addRow({
+                'ครูที่ปรึกษา': advisor.name,
+                'ห้อง': advisor.room,
+                'ระดับชั้น': advisor.classLevel,
+                'สาขาวิชา': advisor.department,
+            });
+        } catch (error) {
+            console.error("Error adding advisor:", error);
+            throw error;
+        }
+    }
+
+    async updateAdvisor(oldId: string, newData: Omit<Advisor, 'id'>): Promise<void> {
+        if (!this.isConnected) await this.connect();
+        if (!this.doc) return;
+
+        try {
+            const sheet = this.doc.sheetsByTitle['Advisors'];
+            if (!sheet) return;
+
+            const rows = await sheet.getRows();
+
+            const rowToUpdate = rows.find(row => {
+                const name = row.get('ครูที่ปรึกษา') || '';
+                const room = row.get('ห้อง') || '';
+                const classLevel = row.get('ระดับชั้น') || '';
+                
+                const rowId = `${name}-${classLevel}-${room}`.replace(/\s+/g, '-');
+
+                return rowId === oldId; 
+            });
+
+            if (rowToUpdate) {
+                rowToUpdate.assign({
+                    'ครูที่ปรึกษา': newData.name,
+                    'ห้อง': newData.room,
+                    'ระดับชั้น': newData.classLevel,
+                    'สาขาวิชา': newData.department,
+                });
+                await rowToUpdate.save();
+            }
+        } catch (error) {
+            console.error("Error updating advisor:", error);
+            throw error;
+        }
+    }
+
+    async deleteAdvisor(id: string): Promise<void> {
+        if (!this.isConnected) await this.connect();
+        if (!this.doc) return;
+
+        try {
+            const sheet = this.doc.sheetsByTitle['Advisors'];
+            if (!sheet) return;
+
+            const rows = await sheet.getRows();
+            
+            const rowToDelete = rows.find(row => {
+                const name = row.get('ครูที่ปรึกษา') || '';
+                const room = row.get('ห้อง') || '';
+                const classLevel = row.get('ระดับชั้น') || '';
+
+                const rowId = `${name}-${classLevel}-${room}`.replace(/\s+/g, '-');
+                
+                return rowId === id;
+            });
+
+            if (rowToDelete) {
+                await rowToDelete.delete();
+            }
+        } catch (error) {
+            console.error("Error deleting advisor:", error);
+            throw error;
         }
     }
 

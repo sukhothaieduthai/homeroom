@@ -3,10 +3,10 @@
 import { sheetService, Advisor, HomeroomReport } from "@/lib/google-sheets";
 import { driveService } from "@/lib/google-drive";
 
-export async function getAdvisorsAction(year: number): Promise<Advisor[]> {
+export async function getAdvisorsAction(): Promise<Advisor[]> {
     try {
         await sheetService.connect();
-        const advisors = await sheetService.getAdvisors(year);
+        const advisors = await sheetService.getAdvisors();
         return advisors;
     } catch (error) {
         console.error("Error in getAdvisorsAction:", error);
@@ -14,24 +14,55 @@ export async function getAdvisorsAction(year: number): Promise<Advisor[]> {
     }
 }
 
+export async function addAdvisorAction(advisor: Omit<Advisor, 'id'>) {
+    try {
+        await sheetService.connect();
+        await sheetService.addAdvisor(advisor);
+        return { success: true };
+    } catch (error) {
+        console.error("Failed to add advisor:", error);
+        return { success: false, error: "Failed to add advisor" };
+    }
+}
+
+export async function updateAdvisorAction(oldId: string, newData: Omit<Advisor, 'id'>) {
+    try {
+        await sheetService.connect();
+        await sheetService.updateAdvisor(oldId, newData);
+        return { success: true };
+    } catch (error) {
+        console.error("Failed to update advisor:", error);
+        return { success: false, error: "Failed to update advisor" };
+    }
+}
+
+export async function deleteAdvisorAction(id: string) {
+    try {
+        await sheetService.connect();
+        await sheetService.deleteAdvisor(id);
+        return { success: true };
+    } catch (error) {
+        console.error("Failed to delete advisor:", error);
+        return { success: false, error: "Failed to delete advisor" };
+    }
+}
+
 export async function saveReportAction(report: Omit<HomeroomReport, 'id' | 'timestamp'>): Promise<string> {
     await sheetService.connect();
     try {
-        const year = parseInt(report.academicYear);
+        const allAdvisors = await sheetService.getAdvisors();
+        
+        const matchedAdvisors = allAdvisors.filter(a =>
+            a.classLevel === report.classLevel &&
+            a.room === report.room &&
+            a.department === report.department
+        );
 
-        if (!isNaN(year)) {
-            const allAdvisors = await sheetService.getAdvisors(year);
-            const matchedAdvisors = allAdvisors.filter(a =>
-                a.classLevel === report.classLevel &&
-                a.room === report.room &&
-                a.department === report.department
-            );
-
-            if (matchedAdvisors.length > 0) {
-                const combinedNames = matchedAdvisors.map(a => a.name).join(" และ ");
-                report.advisorName = combinedNames;
-            }
+        if (matchedAdvisors.length > 0) {
+            const combinedNames = matchedAdvisors.map(a => a.name).join(" และ ");
+            report.advisorName = combinedNames;
         }
+        
     } catch (error) {
         console.error("Error auto-filling co-advisors:", error);
     }
