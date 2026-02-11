@@ -126,6 +126,12 @@ export default function HomeroomForm() {
                     formDataUpload.append("files", file);
                 });
 
+                // Add metadata for custom filename generation
+                formDataUpload.append("advisorName", selectedAdvisor.name);
+                formDataUpload.append("term", term);
+                formDataUpload.append("date", formData.date);
+                formDataUpload.append("topic", formData.topic);
+
                 photoUrls = await uploadPhotosAction(formDataUpload);
             }
 

@@ -74,6 +74,13 @@ export async function getReportsAction(): Promise<HomeroomReport[]> {
     return sheetService.getReports();
 }
 
+interface UploadMetadata {
+    advisorName: string;
+    term: string;
+    date: string;
+    topic: string;
+}
+
 export async function uploadPhotosAction(formData: FormData): Promise<string[]> {
     try {
         const files = formData.getAll("files") as File[];
@@ -83,19 +90,40 @@ export async function uploadPhotosAction(formData: FormData): Promise<string[]> 
             return [];
         }
 
+        // Extract metadata from formData
+        const metadata: UploadMetadata = {
+            advisorName: formData.get("advisorName") as string || "Unknown",
+            term: formData.get("term") as string || "",
+            date: formData.get("date") as string || "",
+            topic: formData.get("topic") as string || ""
+        };
+
+        // Create a sanitized topic (remove special characters, limit length)
+        const sanitizeTopic = (topic: string): string => {
+            return topic
+                .replace(/[^ก-๙a-zA-Z0-9\s]/g, '') // Remove special chars except Thai, English, numbers, spaces
+                .trim()
+                .substring(0, 50) // Limit to 50 characters
+                .replace(/\s+/g, '_'); // Replace spaces with underscores
+        };
+
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
+            const fileExtension = file.name.split('.').pop() || 'jpg';
+
+            // Format: {ชื่อครู}_{เทอม}_{วันที่}_{กิจกรรม}_{index}.{ext}
+            const customFileName = `${metadata.advisorName}_T${metadata.term}_${metadata.date}_${sanitizeTopic(metadata.topic)}_${i + 1}.${fileExtension}`;
 
             try {
-                const driveLink = await driveService.uploadFile(file);
+                const driveLink = await driveService.uploadFile(file, customFileName);
 
                 if (driveLink) {
                     uploadedUrls.push(driveLink);
                 } else {
-                    console.error(`[Upload] Failed to get URL for: ${file.name}`);
+                    console.error(`[Upload] Failed to get URL for: ${customFileName}`);
                 }
             } catch (error) {
-                console.error(`[Upload] Exception uploading ${file.name}:`, error);
+                console.error(`[Upload] Exception uploading ${customFileName}:`, error);
             }
         }
 

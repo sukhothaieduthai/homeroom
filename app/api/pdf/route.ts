@@ -271,14 +271,15 @@ export async function POST(req: NextRequest) {
 
             let html = '';
             const chunks = [];
-            for (let i = 0; i < photos.length; i += 4) {
-                chunks.push(photos.slice(i, i + 4));
+            // Changed from 4 to 6 photos per page
+            for (let i = 0; i < photos.length; i += 6) {
+                chunks.push(photos.slice(i, i + 6));
             }
 
             chunks.forEach((chunk: string[], pageIndex: number) => {
                 html += `
                     <div class="page">
-                        <div class="center table-title">ภาพการจัดกิจกรรมโฮมรูม ของครูที่ปรึกษาและนักเรียน นักศึกษา</div>
+                        <div class="center table-title">ภาพการจัดกิจกรรมโฮมรูม ของครู${advisor.name} และนักเรียน นักศึกษา</div>
                         <div class="center table-subtitle">ภาคเรียนที่ ${term}/${academicYear} วิทยาลัยอาชีวศึกษาสุโขทัย</div>
                         ${pageIndex > 0 ? '<div class="center" style="font-size: 20pt; margin-top: 10px;">(ต่อ)</div>' : ''}
 
@@ -288,7 +289,6 @@ export async function POST(req: NextRequest) {
                                     <div class="photo-img-box">
                                         <img src="${url}" class="photo-img" />
                                     </div>
-                                    <div class="photo-caption">รูปที่ ${(pageIndex * 4) + i + 1}</div>
                                 </div>
                             `).join('')}
                         </div>
