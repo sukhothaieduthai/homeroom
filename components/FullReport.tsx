@@ -5,6 +5,7 @@ import { HomeroomReport, Advisor } from "@/lib/google-sheets";
 import { getReportsAction } from "@/app/actions";
 import AdvisorSelector from "./AdvisorSelector";
 import { DownloadIcon, FileTextIcon, TableIcon, ImageIcon } from "lucide-react";
+import { convertToDriveDirectUrl } from "@/lib/drive-utils";
 
 export default function FullReport() {
     // Selectors State
@@ -48,16 +49,24 @@ export default function FullReport() {
         );
         setFilteredReports(rigorousFiltered);
 
-        // Extract photos
+        // Extract photos and convert to direct URLs
         const photos: string[] = [];
         rigorousFiltered.forEach(r => {
             if (r.photoUrl) {
-                // Split by comma if multiple, trim whitespace
+                console.log("Original photoUrl from DB:", r.photoUrl);
+                // Split by comma if multiple, trim whitespace, and convert to direct URLs
                 r.photoUrl.split(',').forEach(url => {
-                    if (url.trim()) photos.push(url.trim());
+                    const trimmedUrl = url.trim();
+                    if (trimmedUrl) {
+                        const convertedUrl = convertToDriveDirectUrl(trimmedUrl);
+                        console.log("Converted URL:", convertedUrl);
+                        photos.push(convertedUrl);
+                    }
                 });
             }
         });
+        console.log("Total photos found:", photos.length);
+        console.log("Photo URLs:", photos);
         setReportPhotos(photos);
 
     }, [allReports, term, academicYear, selectedAdvisor]);
@@ -70,49 +79,15 @@ export default function FullReport() {
         }
     };
 
-    const getImageDataUrl = (url: string): Promise<string> => {
-        return new Promise((resolve, reject) => {
-            const img = new Image();
-            img.crossOrigin = "Anonymous";
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                canvas.width = img.width;
-                canvas.height = img.height;
-                const ctx = canvas.getContext('2d');
-                if (ctx) {
-                    ctx.drawImage(img, 0, 0);
-                    resolve(canvas.toDataURL('image/jpeg'));
-                } else {
-                    reject(new Error("Canvas context failed"));
-                }
-            };
-            img.onerror = reject;
-            img.src = url;
-        });
-    };
+
 
     const handleExport = async () => {
         if (!selectedAdvisor) return alert("กรุณาเลือกครูที่ปรึกษา");
 
         setIsGenerating(true);
         try {
-            // 1. Prepare Photos as Base64 (for Puppeteer to render locally)
-            const photoDataUrls = [];
-            if (reportPhotos.length > 0 && (viewMode === 'photos' || viewMode === 'cover')) {
-                // Actually logic should be: if mode is 'table', we don't need photos. 
-                // But let's just send them if they exist, or optimize based on viewMode.
-                // Optimization: Only convert if mode includes photos (all or photos)
-            }
-
-            // Optimization: Load photos only if needed
+            // Prepare photo URLs (no conversion needed, pass URLs directly)
             let photosToSend: string[] = [];
-            if (viewMode === 'photos' || viewMode === 'cover' /* Cover doesn't need photos, but 'all' logic usually handled by API if I passed 'all' */) {
-                // Wait. context-aware means if viewMode is 'photos', download photos.
-                // But user might want 'all' somewhere?
-                // The current UI only downloads the CURRENT viewMode.
-            }
-
-            // Re-eval: The user requested "Download what I see".
 
             if (viewMode === 'photos') {
                 if (reportPhotos.length === 0) {
@@ -120,14 +95,8 @@ export default function FullReport() {
                     setIsGenerating(false);
                     return;
                 }
-                // Convert all photos
-                try {
-                    photosToSend = await Promise.all(reportPhotos.map(url => getImageDataUrl(url)));
-                } catch (e) {
-                    console.error("Image conversation failed", e);
-                    // Continue without photos or alert?
-                    // Let's try to continue or ensure at least some work.
-                }
+                // Pass URLs directly (no base64 conversion to avoid CORS)
+                photosToSend = reportPhotos;
             }
 
             // 2. Prepare Payload
@@ -359,26 +328,48 @@ export default function FullReport() {
                         )}
 
                         {viewMode === "photos" && (
-                            <div className="w-full h-full">
-                                <h2 className="text-2xl font-bold text-center mb-2">ภาพการจัดกิจกรรมโฮมรูม</h2>
-                                <h3 className="text-lg font-medium text-center mb-8">ภาคเรียนที่ {term}/{academicYear} วิทยาลัยอาชีวศึกษาสุโขทัย</h3>
-
+                            <div className="w-full h-full space-y-8">
                                 {reportPhotos.length > 0 ? (
-                                    <div className="grid grid-cols-2 gap-8 auto-rows-max p-4">
-                                        {reportPhotos.map((url, index) => (
-                                            <div key={index} className="flex flex-col items-center">
-                                                <div className="aspect-[4/3] w-full bg-gray-100 border border-gray-300 rounded-md overflow-hidden relative shadow-sm">
-                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                    <img
-                                                        src={url}
-                                                        alt={`Activity ${index + 1}`}
-                                                        className="w-full h-full object-cover"
-                                                    />
+                                    // Paginate: 6 photos per page
+                                    Array.from({ length: Math.ceil(reportPhotos.length / 6) }).map((_, pageIndex) => {
+                                        const startIdx = pageIndex * 6;
+                                        const pagePhotos = reportPhotos.slice(startIdx, startIdx + 6);
+
+                                        return (
+                                            <div key={pageIndex} className="page-break-after">
+                                                {/* Header Section (repeated for each page) */}
+                                                <div className="text-center mb-6 space-y-2">
+                                                    <h2 className="text-base font-medium leading-tight">
+                                                        ภาพการจัดกิจกรรมโฮมรูม ของครู{selectedAdvisor.name} และนักเรียน นักศึกษา
+                                                    </h2>
+                                                    <h3 className="text-sm font-normal">
+                                                        ภาคเรียนที่ {term}/{academicYear} วิทยาลัยอาชีวศึกษาสุโขทัย
+                                                    </h3>
+                                                    {pageIndex > 0 && (
+                                                        <p className="text-sm text-gray-600">(ต่อ)</p>
+                                                    )}
                                                 </div>
-                                                <p className="mt-2 text-gray-600 font-medium">รูปที่ {index + 1}</p>
+
+                                                {/* Photo Grid */}
+                                                <div className="grid grid-cols-2 gap-x-4 gap-y-6 auto-rows-max">
+                                                    {pagePhotos.map((url, index) => (
+                                                        <div key={startIdx + index} className="flex flex-col items-center">
+                                                            <div className="aspect-[4/3] w-full bg-gray-100 border border-gray-300 overflow-hidden relative">
+                                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                                <img
+                                                                    src={url}
+                                                                    alt={`Activity ${startIdx + index + 1}`}
+                                                                    className="w-full h-full object-cover"
+                                                                    referrerPolicy="no-referrer"
+                                                                    crossOrigin="anonymous"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             </div>
-                                        ))}
-                                    </div>
+                                        );
+                                    })
                                 ) : (
                                     <div className="flex flex-col items-center justify-center h-64 text-gray-400">
                                         <ImageIcon size={48} className="mb-2" />

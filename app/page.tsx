@@ -4,13 +4,14 @@ import { useState } from "react";
 import HomeroomForm from "@/components/HomeroomForm";
 import ReportView from "@/components/ReportView";
 import FullReport from "@/components/FullReport";
+import AdvisorManagement from "@/components/AdvisorManagement";
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<"record" | "report" | "full-report">("record");
+  const [activeTab, setActiveTab] = useState<"record" | "report" | "full-report" | "advisor">("record");
 
   return (
     <main className="min-h-screen bg-blue-50 py-8 px-4 font-sans">
-      <div className="max-w-3xl mx-auto space-y-6">
+      <div className="max-w-5xl mx-auto space-y-6">
 
         {/* Header Card */}
         <div className="bg-white rounded-xl shadow-sm p-6 text-center border-t-4 border-blue-400">
@@ -47,6 +48,16 @@ export default function Home() {
           >
             ระบบพิมพ์รายงาน
           </button>
+
+          <button
+            onClick={() => setActiveTab("advisor")}
+            className={`px-6 py-2 rounded-md font-bold transition-all ${activeTab === "advisor"
+              ? "bg-orange-500 text-white shadow-md"
+              : "bg-orange-100 text-orange-700 hover:bg-orange-200"
+              }`}
+          >
+            จัดการข้อมูลครู
+          </button>
         </div>
 
         {/* Content Area */}
@@ -54,6 +65,7 @@ export default function Home() {
           {activeTab === "record" && <HomeroomForm />}
           {activeTab === "report" && <ReportView />}
           {activeTab === "full-report" && <FullReport />}
+          {activeTab === "advisor" && <AdvisorManagement />}
         </div>
 
         <footer className="text-center text-sm text-gray-400 mt-8">

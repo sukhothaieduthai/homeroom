@@ -73,6 +73,10 @@
 4.  User can view reports or generate PDFs.
 
 ## Recent Updates / Context
+-   **Google Drive Image Display Fix** (2026-02-12): Fixed issue where Google Drive images weren't displaying in preview and PDF. Created `drive-utils.ts` with URL conversion utilities to transform Drive URLs into direct image format. See `APPS_SCRIPT_FIX.md` for required Google Apps Script modifications.
+-   **Custom Filename Format** (2026-02-12): Implemented custom filename generation for uploaded photos. Files are now named with meaningful information: `{ชื่อครู}_T{เทอม}_{วันที่}_{ชื่อกิจกรรม}_{ลำดับ}.{ext}` instead of generic screenshot names. Special characters are sanitized and topic is truncated to 50 characters for filesystem compatibility.
+-   **Photo Display Pagination** (2026-02-12): Updated photo view to display 6 photos per page instead of limiting to 6 total. When more than 6 photos exist, they are automatically split into multiple pages with repeated headers. Each continuation page shows "(ต่อ)" indicator.
+-   **CORS Fix for Google Drive Images** (2026-02-12): Removed base64 image conversion attempt that caused CORS errors. Now passes Google Drive URLs directly to PDF generation API, which handles them server-side without cross-origin restrictions.
 -   **File Upload Method** (2026-02-05): Switched from Google Drive API to Google Apps Script Web App to avoid quota/authentication issues. Files are now base64-encoded and POSTed to Apps Script endpoint.
 -   **PDF Report Redesign** (2026-02-05): Updated table format in FullReport.tsx to match institutional requirements with proper column headers and data layout.
 -   **Code Cleanup** (2026-02-05): Removed verbose debug console.log statements while keeping essential error logging.
