@@ -79,8 +79,6 @@ export default function FullReport() {
         }
     };
 
-
-
     const handleExport = async () => {
         if (!selectedAdvisor) return alert("กรุณาเลือกครูที่ปรึกษา");
 
