@@ -16,6 +16,7 @@
     -   **Advisor Selection**: Smart 3-step dropdowns (Department → Advisor Name → Room) to handle advisors with multiple rooms.
     -   Auto-fetches details based on selection.
     -   Photos uploaded to Google Drive via Apps Script Web App.
+    -   **Report History Zone** (2026-02-14): Shows chronological history of all reports for the selected advisor/term/year combination below the form. History automatically updates when form selections change.
 
 
 2.  **Reports Dashboard (`FullReport.tsx`)**:
@@ -73,6 +74,7 @@
 4.  User can view reports or generate PDFs.
 
 ## Recent Updates / Context
+-   **Report History Feature** (2026-02-14): Added comprehensive history section to `HomeroomForm.tsx` that displays all historical reports for the selected advisor, term, and year. Reports appear in chronological order below the form with color-coded attendance statistics. History automatically updates when form selections change - no separate selectors needed.
 -   **Google Drive Image Display Fix** (2026-02-12): Fixed issue where Google Drive images weren't displaying in preview and PDF. Created `drive-utils.ts` with URL conversion utilities to transform Drive URLs into direct image format. See `APPS_SCRIPT_FIX.md` for required Google Apps Script modifications.
 -   **Custom Filename Format** (2026-02-12): Implemented custom filename generation for uploaded photos. Files are now named with meaningful information: `{ชื่อครู}_T{เทอม}_{วันที่}_{ชื่อกิจกรรม}_{ลำดับ}.{ext}` instead of generic screenshot names. Special characters are sanitized and topic is truncated to 50 characters for filesystem compatibility.
 -   **Photo Display Pagination** (2026-02-12): Updated photo view to display 6 photos per page instead of limiting to 6 total. When more than 6 photos exist, they are automatically split into multiple pages with repeated headers. Each continuation page shows "(ต่อ)" indicator.

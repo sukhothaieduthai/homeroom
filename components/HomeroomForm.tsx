@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AdvisorSelector from "./AdvisorSelector";
-import { Advisor } from "@/lib/google-sheets";
-import { saveReportAction, uploadPhotosAction } from "@/app/actions";
+import { Advisor, HomeroomReport } from "@/lib/google-sheets";
+import { saveReportAction, uploadPhotosAction, getReportsAction } from "@/app/actions";
 import { CalendarIcon, UploadCloudIcon, XIcon, ImageIcon } from "lucide-react";
 import Image from "next/image";
 
@@ -33,6 +33,10 @@ export default function HomeroomForm() {
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // History State
+    const [allReports, setAllReports] = useState<HomeroomReport[]>([]);
+    const [historyReports, setHistoryReports] = useState<HomeroomReport[]>([]);
+
     const handleAdvisorSelect = (advisors: Advisor[]) => {
         if (advisors.length > 0) {
             setSelectedAdvisor(advisors[0]);
@@ -40,6 +44,38 @@ export default function HomeroomForm() {
             setSelectedAdvisor(null);
         }
     };
+
+    // Fetch all reports on mount
+    useEffect(() => {
+        async function fetchReports() {
+            const data = await getReportsAction();
+            setAllReports(data);
+        }
+        fetchReports();
+    }, []);
+
+    // Filter reports when advisor, term, or year changes
+    useEffect(() => {
+        if (!selectedAdvisor) {
+            setHistoryReports([]);
+            return;
+        }
+
+        const filtered = allReports.filter(r =>
+            (r.academicYear === academicYear || !r.academicYear) &&
+            (r.term === term || !r.term) &&
+            r.advisorName?.includes(selectedAdvisor.name)
+        );
+
+        // Sort by week number (ascending)
+        const sorted = filtered.sort((a, b) => {
+            const weekA = parseInt(String(a.week || "0"));
+            const weekB = parseInt(String(b.week || "0"));
+            return weekA - weekB;
+        });
+
+        setHistoryReports(sorted);
+    }, [allReports, term, academicYear, selectedAdvisor]);
 
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -346,6 +382,69 @@ export default function HomeroomForm() {
             >
                 {isSubmitting ? "กำลังบันทึก..." : "บันทึกข้อมูล"}
             </button>
+
+            {/* Report History Section */}
+            {selectedAdvisor && (
+                <div className="mt-8 pt-6 border-t-2 border-gray-300">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                        ประวัติการบันทึก (Report History)
+                    </h3>
+
+                    {historyReports.length === 0 ? (
+                        <div className="text-center text-gray-400 py-8 bg-gray-50 rounded-lg">
+                            <p>ไม่พบรายการบันทึก สำหรับ {selectedAdvisor.name} ภาคเรียนที่ {term}/{academicYear}</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            <div className="bg-blue-50 p-3 rounded-lg mb-4">
+                                <p className="text-sm text-gray-700">
+                                    <span className="font-semibold">{selectedAdvisor.name}</span> - {selectedAdvisor.department} ระดับชั้น {selectedAdvisor.classLevel} ห้อง {selectedAdvisor.room}
+                                </p>
+                                <p className="text-sm text-gray-600">ภาคเรียนที่ {term}/{academicYear} - พบ {historyReports.length} รายการ</p>
+                            </div>
+
+                            <div className="overflow-x-auto">
+                                <table className="w-full border-collapse border border-gray-300">
+                                    <thead>
+                                        <tr className="bg-gray-100">
+                                            <th className="border border-gray-300 p-3 text-left text-sm font-semibold text-gray-700 w-24">สัปดาห์</th>
+                                            <th className="border border-gray-300 p-3 text-left text-sm font-semibold text-gray-700 w-32">วันที่</th>
+                                            <th className="border border-gray-300 p-3 text-left text-sm font-semibold text-gray-700">หัวข้อกิจกรรม</th>
+                                            <th className="border border-gray-300 p-3 text-center text-sm font-semibold text-gray-700 w-20">จำนวน</th>
+                                            <th className="border border-gray-300 p-3 text-center text-sm font-semibold text-gray-700 w-20">มา</th>
+                                            <th className="border border-gray-300 p-3 text-center text-sm font-semibold text-gray-700 w-20">ขาด</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {historyReports.map((report, index) => (
+                                            <tr key={report.id || index} className="hover:bg-gray-50 transition-colors">
+                                                <td className="border border-gray-300 p-3 text-sm text-gray-800">
+                                                    สัปดาห์ {report.week}
+                                                </td>
+                                                <td className="border border-gray-300 p-3 text-sm text-gray-800">
+                                                    {report.date}
+                                                </td>
+                                                <td className="border border-gray-300 p-3 text-sm text-gray-700">
+                                                    {report.topic}
+                                                </td>
+                                                <td className="border border-gray-300 p-3 text-center text-sm text-gray-800">
+                                                    {report.totalStudents}
+                                                </td>
+                                                <td className="border border-gray-300 p-3 text-center text-sm text-green-600 font-medium">
+                                                    {report.presentStudents}
+                                                </td>
+                                                <td className="border border-gray-300 p-3 text-center text-sm text-red-600 font-medium">
+                                                    {report.absentStudents}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
         </form>
     );
 }
