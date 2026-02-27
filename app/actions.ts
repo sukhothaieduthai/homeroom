@@ -36,8 +36,14 @@ export async function updateAdvisorAction(oldId: string, newData: Omit<Advisor, 
     }
 }
 
-export async function deleteAdvisorAction(id: string) {
+export async function deleteAdvisorAction(id: string, pin: string) {
     try {
+        const correctPin = process.env.ADMIN_DELETE_PIN;
+
+        if (!correctPin || pin !== correctPin) {
+            return { success: false, error: "รหัสผ่านไม่ถูกต้อง หรือยังไม่ได้ตั้งค่ารหัสผ่านในระบบ" };
+        }
+
         await sheetService.connect();
         await sheetService.deleteAdvisor(id);
         return { success: true };
@@ -51,7 +57,7 @@ export async function saveReportAction(report: Omit<HomeroomReport, 'id' | 'time
     await sheetService.connect();
     try {
         const allAdvisors = await sheetService.getAdvisors();
-        
+
         const matchedAdvisors = allAdvisors.filter(a =>
             a.classLevel === report.classLevel &&
             a.room === report.room &&
@@ -62,7 +68,7 @@ export async function saveReportAction(report: Omit<HomeroomReport, 'id' | 'time
             const combinedNames = matchedAdvisors.map(a => a.name).join(" และ ");
             report.advisorName = combinedNames;
         }
-        
+
     } catch (error) {
         console.error("Error auto-filling co-advisors:", error);
     }

@@ -198,72 +198,139 @@ export async function POST(req: NextRequest) {
         `;
 
         const getTableHTML = () => {
-            return `
-            <div class="page">
-                <div style="display: flex; align-items: flex-start; margin-bottom: 15px;">
-                    <img src="${logoBase64}" alt="Logo" style="width: 80px; height: 80px; margin-right: 15px; flex-shrink: 0;" />
-                    <div style="flex: 1; text-align: center; padding-top: 5px;">
-                        <h1 style="font-size: 18pt; font-weight: bold; margin: 0; line-height: 1.2;">แบบบันทึกกิจกรรมโฮมรูม ภาคเรียนที่ ${term}/${academicYear}</h1>
-                        <p style="font-size: 16pt; margin: 5px 0 0 0;">วิทยาลัยอาชีวศึกษาสุโขทัย</p>
+            if (!reports || reports.length === 0) {
+                // Empty state if no reports (still render the page structure)
+                return `
+                <div class="page">
+                    <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 20px; position: relative;">
+                        <img src="${logoBase64}" alt="Logo" style="width: 80px; height: 80px; position: absolute; left: 0; top: 0;" />
+                        <div style="text-align: center; width: 100%;">
+                            <h1 style="font-size: 18pt; font-weight: bold; margin: 0; line-height: 1.2;">แบบบันทึกกิจกรรมโฮมรูม ภาคเรียนที่ ${term}/${academicYear}</h1>
+                            <h2 style="font-size: 18pt; font-weight: bold; margin: 5px 0 0 0;">วิทยาลัยอาชีวศึกษาสุโขทัย</h2>
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin-top: 100px; color: #999; font-size: 16pt;">ไม่พบรายงาน</div>
+                </div>`;
+            }
+
+            let html = '';
+            const chunks = [];
+            for (let i = 0; i < reports.length; i += 6) {
+                chunks.push(reports.slice(i, i + 6));
+            }
+
+            chunks.forEach((chunk: any[], pageIndex: number) => {
+                const isLastPage = pageIndex === chunks.length - 1;
+
+                html += `
+                <div class="page" style="display: flex; flex-direction: column;">
+                    <!-- Header Section -->
+                    <div style="display: flex; align-items: flex-start; margin-bottom: 5px;">
+                        <img src="${logoBase64}" alt="Logo" style="width: 60px; height: 60px; margin-right: 15px; flex-shrink: 0;" />
+                        <div style="flex: 1; text-align: center; padding-top: 5px;">
+                            <h1 style="font-size: 16pt; font-weight: bold; margin: 0; line-height: 1.2;">แบบบันทึกกิจกรรมโฮมรูม ภาคเรียนที่ ${term}/${academicYear}</h1>
+                            <p style="font-size: 14pt; margin: 2px 0 0 0;">วิทยาลัยอาชีวศึกษาสุโขทัย</p>
+                        </div>
+                    </div>
+
+                    <!-- Class & Advisor Info -->
+                    <div style="font-size: 12pt; margin-bottom: 2px;">
+                        <span style="font-weight: normal;">ระดับชั้น</span> ${advisor.classLevel}
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="font-weight: normal;">สาขาวิชา</span> ${advisor.department}
+                        &nbsp;&nbsp;&nbsp;
+                        <span style="font-weight: normal;">ห้อง</span> ${advisor.room}
+                    </div>
+                    
+                    <div style="font-size: 12pt; margin-bottom: 8px;">
+                        <span style="font-weight: normal;">ครูที่ปรึกษา</span> ${advisor.name}
+                    </div>
+
+                    <!-- Table -->
+                    <table style="width: 100%; border-collapse: collapse; border: 1px solid black; margin-bottom: 8px; flex: 1;">
+                        <thead>
+                            <tr>
+                                <th style="border: 1px solid black; padding: 4px; font-size: 12pt; font-weight: bold; background-color: #f0f0f0; text-align: center; width: 22%;" rowspan="2">
+                                    สัปดาห์ที่<br/>วัน/เวลา<br/>สถานที่อบรม
+                                </th>
+                                <th style="border: 1px solid black; padding: 4px; font-size: 12pt; font-weight: bold; background-color: #f0f0f0; text-align: center;" rowspan="2">
+                                    เรื่อง/กิจกรรม/แนวทาง/เจ้าหน้าที่
+                                </th>
+                                <th style="border: 1px solid black; padding: 4px; font-size: 12pt; font-weight: bold; background-color: #f0f0f0; text-align: center; width: 28%;" colspan="3">
+                                    ข้อมูลนักเรียน/นักศึกษา
+                                </th>
+                            </tr>
+                            <tr>
+                                <th style="border: 1px solid black; padding: 2px; font-size: 11pt; font-weight: bold; background-color: #f0f0f0; text-align: center; width: 8%;">จำนวน</th>
+                                <th style="border: 1px solid black; padding: 2px; font-size: 11pt; font-weight: bold; background-color: #f0f0f0; text-align: center; width: 8%;">มา</th>
+                                <th style="border: 1px solid black; padding: 2px; font-size: 11pt; font-weight: bold; background-color: #f0f0f0; text-align: center; width: 8%;">ขาด</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${chunk.map((r: any) => `
+                                <tr>
+                                    <td style="border: 1px solid black; padding: 4px; vertical-align: top; font-size: 11pt;">
+                                        <div style="color: #1d4ed8; font-weight: 500;">สัปดาห์ที่ ${r.week} (${r.date})</div>
+                                        <div style="color: #666; margin-top: 1px; font-size: 10pt;">เวลา 13.00-14.00 น.</div>
+                                    </td>
+                                    <td style="border: 1px solid black; padding: 4px; vertical-align: top; font-size: 11pt; line-height: 1.3;">
+                                        ${r.topic}
+                                    </td>
+                                    <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 11pt; vertical-align: middle;">${r.totalStudents}</td>
+                                    <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 11pt; vertical-align: middle;">${r.presentStudents}</td>
+                                    <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 11pt; vertical-align: middle;">${r.absentStudents}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+
+                    <!-- Footer Details (Display on every page) -->
+                    <div style="font-size: 11pt; line-height: 1.4; margin-top: auto; padding-top: 5px;">
+                        
+                        <!-- Stats Rows -->
+                        <div style="font-size: 10pt; display: flex; justify-content: space-between; align-items: center; padding: 0 5px; width: 100%; white-space: nowrap; overflow: hidden;">
+                            <span>จำนวนนักเรียนนักศึกษาขอรับคำปรึกษา (ตามแบบบันทึก).......................คน </span>
+                            <span>ช่วยเหลือเรียบร้อย.......................คน</span>
+                        </div>
+                        
+                        <div style="font-size: 10pt; display: flex; justify-content: space-between; align-items: center; margin-top: 5px; margin-bottom: 15px; width: 100%; white-space: nowrap; overflow: hidden;">
+                            <span>มีการส่งต่อ.......................คน</span>
+                            <span>จำนวนนักเรียนนักศึกษาออกกลางคัน (ถ้ามี) ลาออก.......................คน</span>
+                            <span>พักการเรียน.......................คน</span>
+                            <span>อื่นๆ (.........................................)....... คน</span>
+                        </div>
+
+                        <!-- Signatures -->
+                        <div style="display: flex; justify-content: space-around; margin-top: 10px; margin-bottom: 10px;">
+                            <div style="text-align: center;">
+                                <div style="display: flex; align-items: flex-end;">
+                                    <span style="margin-right: 10px;">ลงชื่อ</span>
+                                    <div style="border-bottom: 1px dotted black; width: 140px;"></div>
+                                    <span style="margin-left: 10px;">ครูที่ปรึกษา</span>
+                                </div>
+                                <div style="margin-top: 5px;">(${advisor.name})</div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="display: flex; align-items: flex-end;">
+                                    <span style="margin-right: 10px;">ลงชื่อ</span>
+                                    <div style="border-bottom: 1px dotted black; width: 140px;"></div>
+                                    <span style="margin-left: 10px;">ครูที่ปรึกษา</span>
+                                </div>
+                                <div style="margin-top: 5px;">(............................................................)</div>
+                            </div>
+                        </div>
+
+                        <!-- Remarks -->
+                        <div style="display: flex; align-items: flex-start; margin-top: 8px; padding: 0 5px;">
+                            <span style="font-weight: bold; margin-right: 10px; white-space: nowrap;">หมายเหตุ</span>
+                            <div style="flex: 1; white-space: pre-wrap; line-height: 1.2;">${data.remarks || ''}</div>
+                        </div>
                     </div>
                 </div>
+                `;
+            });
 
-                <div style="font-size: 14pt; margin-bottom: 5px;">
-                    <span style="font-weight: normal;">ระดับชั้น</span> ${advisor.classLevel}
-                    &nbsp;&nbsp;&nbsp;
-                    <span style="font-weight: normal;">สาขาวิชา</span> ${advisor.department}
-                    &nbsp;&nbsp;&nbsp;
-                    <span style="font-weight: normal;">ห้อง</span> ${advisor.room}
-                </div>
-                
-                <div style="font-size: 14pt; margin-bottom: 15px;">
-                    <span style="font-weight: normal;">ครูที่ปรึกษา</span> ${advisor.name}
-                </div>
-
-                <table style="width: 100%; border-collapse: collapse; border: 1px solid black;">
-                    <thead>
-                        <tr>
-                            <th style="border: 1px solid black; padding: 8px; font-size: 14pt; font-weight: bold; background-color: #f0f0f0; text-align: center;" rowspan="2">
-                                สัปดาห์ที่<br/>วัน/เวลา<br/>สถานที่อบรม
-                            </th>
-                            <th style="border: 1px solid black; padding: 8px; font-size: 14pt; font-weight: bold; background-color: #f0f0f0; text-align: center;" rowspan="2">
-                                เรื่อง/กิจกรรม/แนวทาง/เจ้าหน้าที่
-                            </th>
-                            <th style="border: 1px solid black; padding: 8px; font-size: 14pt; font-weight: bold; background-color: #f0f0f0; text-align: center;" colspan="3">
-                                ข้อมูลนักเรียน/นักศึกษา
-                            </th>
-                        </tr>
-                        <tr>
-                            <th style="border: 1px solid black; padding: 4px; font-size: 14pt; font-weight: bold; background-color: #f0f0f0; text-align: center; width: 60px;">จำนวน</th>
-                            <th style="border: 1px solid black; padding: 4px; font-size: 14pt; font-weight: bold; background-color: #f0f0f0; text-align: center; width: 60px;">มา</th>
-                            <th style="border: 1px solid black; padding: 4px; font-size: 14pt; font-weight: bold; background-color: #f0f0f0; text-align: center; width: 60px;">ขาด</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${reports.length > 0 ? reports.map((r: any) => `
-                            <tr>
-                                <td style="border: 1px solid black; padding: 8px; vertical-align: top; font-size: 12pt;">
-                                    <div style="color: #1d4ed8; font-weight: 500;">สัปดาห์ที่ ${r.week} (${r.date})</div>
-                                    <div style="color: #666; margin-top: 2px; font-size: 11pt;">เวลา 13.00-14.00 น.</div>
-                                </td>
-                                <td style="border: 1px solid black; padding: 8px; vertical-align: top; font-size: 12pt; line-height: 1.4;">
-                                    ${r.topic}
-                                </td>
-                                <td style="border: 1px solid black; padding: 4px; text-align: center; font-size: 12pt;">${r.totalStudents}</td>
-                                <td style="border: 1px solid black; padding: 4px; text-align: center; font-size: 12pt;">${r.presentStudents}</td>
-                                <td style="border: 1px solid black; padding: 4px; text-align: center; font-size: 12pt;">${r.absentStudents}</td>
-                            </tr>
-                        `).join('') : `
-                            <tr>
-                                <td colspan="5" style="border: 1px solid black; padding: 20px; text-align: center; color: #999;">
-                                    ไม่พบรายงาน
-                                </td>
-                            </tr>
-                        `}
-                    </tbody>
-                </table>
-            </div>
-        `;
+            return html;
         };
 
         const getPhotosHTML = () => {
@@ -283,7 +350,7 @@ export async function POST(req: NextRequest) {
                         <div class="center table-subtitle">ภาคเรียนที่ ${term}/${academicYear} วิทยาลัยอาชีวศึกษาสุโขทัย</div>
                         ${pageIndex > 0 ? '<div class="center" style="font-size: 20pt; margin-top: 10px;">(ต่อ)</div>' : ''}
 
-                        <div class="photo-grid">
+                        <div class="photo-grid" style="flex-grow: 1;">
                             ${chunk.map((url, i) => `
                                 <div class="photo-item">
                                     <div class="photo-img-box">
@@ -291,6 +358,11 @@ export async function POST(req: NextRequest) {
                                     </div>
                                 </div>
                             `).join('')}
+                        </div>
+
+                        <!-- Footer Motto -->
+                        <div style="text-align: center; margin-top: auto; padding-top: 24px; font-size: 16pt; font-weight: bold; color: #333;">
+                            “เรียนดี มีคุณธรรม”
                         </div>
                     </div>
                 `;

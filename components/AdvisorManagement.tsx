@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { Advisor } from "@/lib/google-sheets";
-import { 
-    getAdvisorsAction, 
-    addAdvisorAction, 
-    deleteAdvisorAction, 
-    updateAdvisorAction 
+import {
+    getAdvisorsAction,
+    addAdvisorAction,
+    deleteAdvisorAction,
+    updateAdvisorAction
 } from "@/app/actions";
 import { Trash2Icon, PlusIcon, UserPlus, Users, PencilIcon, XIcon, SaveIcon } from "lucide-react";
 
@@ -30,7 +30,7 @@ export default function AdvisorManagement() {
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const [editId, setEditId] = useState<string | null>(null); 
+    const [editId, setEditId] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
         name: "",
@@ -55,7 +55,7 @@ export default function AdvisorManagement() {
     };
 
     const startEdit = (advisor: Advisor) => {
-        setEditId(advisor.id); 
+        setEditId(advisor.id);
         setFormData({
             name: advisor.name,
             department: advisor.department,
@@ -67,7 +67,7 @@ export default function AdvisorManagement() {
 
     const cancelEdit = () => {
         setEditId(null);
-        setFormData({ name: "", department: "", classLevel: "ปวช. 1", room: "" }); 
+        setFormData({ name: "", department: "", classLevel: "ปวช. 1", room: "" });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -93,7 +93,7 @@ export default function AdvisorManagement() {
         if (result.success) {
             alert(editId ? "แก้ไขข้อมูลสำเร็จ" : "เพิ่มข้อมูลสำเร็จ");
             cancelEdit();
-            fetchAdvisors(); 
+            fetchAdvisors();
         } else {
             alert("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
         }
@@ -103,14 +103,17 @@ export default function AdvisorManagement() {
     const handleDelete = async (id: string) => {
         if (!confirm("ยืนยันการลบข้อมูลครูที่ปรึกษาท่านนี้?")) return;
 
-        const result = await deleteAdvisorAction(id);
+        const pin = prompt("กรุณาใส่รหัสผ่านเพื่อยืนยันการลบ:");
+        if (pin === null) return; // User cancelled the prompt
+
+        const result = await deleteAdvisorAction(id, pin);
         if (result.success) {
             if (editId === id) {
                 cancelEdit();
             }
             fetchAdvisors();
         } else {
-            alert("ลบข้อมูลไม่สำเร็จ");
+            alert(result.error || "ลบข้อมูลไม่สำเร็จ");
         }
     };
 
@@ -130,7 +133,7 @@ export default function AdvisorManagement() {
                             {editId ? <PencilIcon size={20} /> : <UserPlus size={20} />}
                             {editId ? "แก้ไขข้อมูลครูที่ปรึกษา" : "เพิ่มครูที่ปรึกษาใหม่"}
                         </h3>
-                        
+
                         <form onSubmit={handleSubmit} className="space-y-4 text-gray-700">
                             <div>
                                 <label className="text-sm font-medium block mb-1">ชื่อ-นามสกุล</label>
@@ -139,7 +142,7 @@ export default function AdvisorManagement() {
                                     name="name"
                                     value={formData.name}
                                     onChange={handleInputChange}
-                                    disabled={!!editId} 
+                                    disabled={!!editId}
                                     className={`w-full border rounded-md p-2 outline-none focus:ring-2 focus:ring-orange-400 ${editId ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-white'}`}
                                     placeholder="เช่น นายสมชาย ใจดี"
                                 />
@@ -190,15 +193,14 @@ export default function AdvisorManagement() {
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className={`flex-1 py-2 rounded-md transition-colors flex items-center justify-center gap-2 shadow-sm ${
-                                        editId 
-                                        ? 'bg-yellow-500 hover:bg-yellow-600 text-white' 
-                                        : 'bg-orange-500 hover:bg-orange-600 text-white'
-                                    } ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+                                    className={`flex-1 py-2 rounded-md transition-colors flex items-center justify-center gap-2 shadow-sm ${editId
+                                            ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                                            : 'bg-orange-500 hover:bg-orange-600 text-white'
+                                        } ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
                                 >
-                                    {isSubmitting ? 'กำลังบันทึก...' : (editId ? <><SaveIcon size={18}/> แก้ไขข้อมูล</> : <><PlusIcon size={18}/> เพิ่มข้อมูล</>)}
+                                    {isSubmitting ? 'กำลังบันทึก...' : (editId ? <><SaveIcon size={18} /> แก้ไขข้อมูล</> : <><PlusIcon size={18} /> เพิ่มข้อมูล</>)}
                                 </button>
-                                
+
                                 <button
                                     type="button"
                                     onClick={cancelEdit}
