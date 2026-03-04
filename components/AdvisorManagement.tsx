@@ -8,7 +8,7 @@ import {
     deleteAdvisorAction,
     updateAdvisorAction
 } from "@/app/actions";
-import { Trash2Icon, PlusIcon, UserPlus, Users, PencilIcon, XIcon, SaveIcon, AlertCircle } from "lucide-react";
+import { Trash2Icon, PlusIcon, UserPlus, Users, PencilIcon, XIcon, SaveIcon, AlertCircle, EyeIcon, EyeOffIcon } from "lucide-react";
 
 const DEPARTMENTS = [
     "การบัญชี",
@@ -40,7 +40,8 @@ export default function AdvisorManagement() {
         onConfirm: (val?: string) => { },
     });
 
-    const closeDialog = () => setDialog(prev => ({ ...prev, isOpen: false }));
+    const [showPin, setShowPin] = useState(false);
+    const closeDialog = () => { setDialog(prev => ({ ...prev, isOpen: false })); setShowPin(false); };
 
     const showAlert = (title: string, message: string) => {
         setDialog({
@@ -340,19 +341,29 @@ export default function AdvisorManagement() {
                         <div className="p-6">
                             <p className="text-gray-700 mb-4">{dialog.message}</p>
                             {dialog.type === 'prompt' && (
-                                <input
-                                    type="password"
-                                    autoFocus
-                                    className="w-full border-2 border-gray-200 bg-gray-50 text-gray-900 text-lg sm:text-xl tracking-widest font-bold rounded-lg p-3 sm:p-4 outline-none focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/20 transition-all placeholder:text-gray-400 placeholder:text-base placeholder:font-normal placeholder:tracking-normal"
-                                    placeholder="ใส่รหัสผ่านที่นี่..."
-                                    value={dialog.inputValue}
-                                    onChange={(e) => setDialog(prev => ({ ...prev, inputValue: e.target.value }))}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            dialog.onConfirm(dialog.inputValue);
-                                        }
-                                    }}
-                                />
+                                <div className="relative">
+                                    <input
+                                        type={showPin ? 'text' : 'password'}
+                                        autoFocus
+                                        className="w-full border-2 border-gray-200 bg-gray-50 text-gray-900 text-lg sm:text-xl tracking-widest font-bold rounded-lg p-3 sm:p-4 pr-12 outline-none focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/20 transition-all placeholder:text-gray-400 placeholder:text-base placeholder:font-normal placeholder:tracking-normal"
+                                        placeholder="ใส่รหัสผ่านที่นี่..."
+                                        value={dialog.inputValue}
+                                        onChange={(e) => setDialog(prev => ({ ...prev, inputValue: e.target.value }))}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                dialog.onConfirm(dialog.inputValue);
+                                            }
+                                        }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPin(p => !p)}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                        tabIndex={-1}
+                                    >
+                                        {showPin ? <EyeOffIcon size={20} /> : <EyeIcon size={20} />}
+                                    </button>
+                                </div>
                             )}
                         </div>
                         <div className="flex gap-3 justify-end px-6 py-4 bg-gray-50 border-t">

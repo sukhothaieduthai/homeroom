@@ -1,24 +1,15 @@
-const APPS_SCRIPT_URL = process.env.GOOGLE_APPS_SCRIPT_URL || "https://script.google.com/macros/s/AKfycbzygNokPpe1ahjBw6CDz9lhMsxqrB08-rAytu6XZkCp6SJsYdTv6LTk035FqVy6-zYGTA/exec";
+const APPS_SCRIPT_URL = process.env.GOOGLE_APPS_SCRIPT_URL || "";
 
 export class GoogleDriveService {
     async uploadFile(file: File, customFileName?: string): Promise<string | null> {
         try {
-            // Convert file to base64
             const buffer = Buffer.from(await file.arrayBuffer());
             const base64 = buffer.toString('base64');
-
-            // Use custom filename if provided, otherwise use original
             const fileName = customFileName || file.name;
 
-            console.log('[Drive] Uploading file:', fileName);
-            console.log('[Drive] Apps Script URL:', APPS_SCRIPT_URL);
-
-            // POST to Google Apps Script
             const response = await fetch(APPS_SCRIPT_URL, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: new URLSearchParams({
                     file: base64,
                     fileName: fileName,
@@ -27,16 +18,13 @@ export class GoogleDriveService {
             });
 
             if (!response.ok) {
-                console.error(`[Drive] HTTP Error: ${response.status} ${response.statusText}`);
+                console.error(`[Drive] HTTP Error: ${response.status}`);
                 return null;
             }
 
             const result = await response.json();
-            console.log('[Drive] Apps Script Response:', result);
 
             if (result.success && result.url) {
-                console.log('[Drive] URL from Apps Script:', result.url);
-                console.log('[Drive] File ID:', result.fileId);
                 return result.url;
             } else {
                 console.error(`[Drive] Upload failed:`, result.error || 'Unknown error');
@@ -45,6 +33,30 @@ export class GoogleDriveService {
         } catch (error: any) {
             console.error(`[Drive] Exception during upload:`, error.message);
             return null;
+        }
+    }
+
+    extractFileId(url: string): string | null {
+        const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+        return match ? match[1] : null;
+    }
+
+    async deleteFile(url: string): Promise<void> {
+        const fileId = this.extractFileId(url);
+        if (!fileId) return;
+
+        try {
+            const response = await fetch(APPS_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ action: 'delete', fileId }),
+            });
+            const result = await response.json();
+            if (!result.success) {
+                console.error('[Drive] Delete failed:', result.error);
+            }
+        } catch (error: any) {
+            console.error('[Drive] Exception during file delete:', error.message);
         }
     }
 }

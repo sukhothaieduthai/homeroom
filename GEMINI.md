@@ -95,3 +95,26 @@
 1.  `npm install`
 2.  Set up `.env.local` with Google Creds (See `SETUP_GUIDE.md` for help).
 3.  `npm run dev`
+
+## URL Routing Map
+| URL | Component | Description |
+|---|---|---|
+| `/` | → redirect | Redirects to `/record` |
+| `/record` | `HomeroomForm.tsx` | บันทึกกิจกรรมโฮมรูม |
+| `/report` | `ReportView.tsx` | รายงานสรุปผล |
+| `/print` | `FullReport.tsx` | ระบบพิมพ์รายงาน (7 PDF form types) |
+| `/advisor` | `AdvisorManagement.tsx` | จัดการข้อมูลครู |
+
+Navigation is handled by the shared `Navbar.tsx` component using `next/link` with active state detection via `usePathname()`.
+
+## PDF Form Types (ระบบพิมพ์รายงาน)
+The `/print` page supports 7 printable PDF form types:
+1. **หน้าปก** — Cover page
+2. **ตาราง** — Activity log table (paginated, 6 rows/page)
+3. **รูปภาพ** — Activity photo grid (6 photos/page)
+4. **แบบบันทึกให้คำปรึกษา** — Individual student counseling record (รายบุคคล)
+5. **รายงานให้คำปรึกษา (ตาราง)** — Counseling summary table with student list
+6. **ติดตามนักเรียน** — Absent/dropout student tracking table
+7. **สรุปปัญหา/ข้อเสนอแนะ** — Problems and suggestions summary with 4 signature lines
+
+-   **URL Routing & New PDF Forms** (2026-03-04): Converted single-page tab navigation to proper Next.js App Router URL-based routing. Added `Navbar.tsx` shared component, 4 route pages (`/record`, `/report`, `/print`, `/advisor`), and root redirect. Added 4 new Thai administrative PDF form types to `FullReport.tsx` (browser preview) and `api/pdf/route.ts` (PDF generation): แบบบันทึกให้คำปรึกษา รายบุคคล, รายงานให้คำปรึกษา (ตาราง), ติดตามนักเรียน, and สรุปปัญหา/ข้อเสนอแนะ.
