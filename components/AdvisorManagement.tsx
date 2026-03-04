@@ -8,7 +8,7 @@ import {
     deleteAdvisorAction,
     updateAdvisorAction
 } from "@/app/actions";
-import { Trash2Icon, PlusIcon, UserPlus, Users, PencilIcon, XIcon, SaveIcon } from "lucide-react";
+import { Trash2Icon, PlusIcon, UserPlus, Users, PencilIcon, XIcon, SaveIcon, AlertCircle } from "lucide-react";
 
 const DEPARTMENTS = [
     "การบัญชี",
@@ -29,6 +29,57 @@ export default function AdvisorManagement() {
     const [advisors, setAdvisors] = useState<Advisor[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    type DialogType = 'alert' | 'confirm' | 'prompt' | null;
+    const [dialog, setDialog] = useState({
+        isOpen: false,
+        type: null as DialogType,
+        title: '',
+        message: '',
+        inputValue: '',
+        onConfirm: (val?: string) => { },
+    });
+
+    const closeDialog = () => setDialog(prev => ({ ...prev, isOpen: false }));
+
+    const showAlert = (title: string, message: string) => {
+        setDialog({
+            isOpen: true,
+            type: 'alert',
+            title,
+            message,
+            inputValue: '',
+            onConfirm: closeDialog,
+        });
+    };
+
+    const showConfirm = (title: string, message: string, onConfirm: () => void) => {
+        setDialog({
+            isOpen: true,
+            type: 'confirm',
+            title,
+            message,
+            inputValue: '',
+            onConfirm: () => {
+                closeDialog();
+                onConfirm();
+            },
+        });
+    };
+
+    const showPrompt = (title: string, message: string, onConfirm: (val: string) => void) => {
+        setDialog({
+            isOpen: true,
+            type: 'prompt',
+            title,
+            message,
+            inputValue: '',
+            onConfirm: (val?: string) => {
+                closeDialog();
+                if (val) onConfirm(val);
+            },
+        });
+    };
 
     const [editId, setEditId] = useState<string | null>(null);
 
@@ -73,7 +124,7 @@ export default function AdvisorManagement() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.name || !formData.room || !formData.department) {
-            alert("กรุณากรอกข้อมูลให้ครบถ้วน");
+            showAlert("แจ้งเตือน", "กรุณากรอกข้อมูลให้ครบถ้วน");
             return;
         }
 
@@ -91,30 +142,34 @@ export default function AdvisorManagement() {
         }
 
         if (result.success) {
-            alert(editId ? "แก้ไขข้อมูลสำเร็จ" : "เพิ่มข้อมูลสำเร็จ");
+            showAlert("สำเร็จ", editId ? "แก้ไขข้อมูลสำเร็จ" : "เพิ่มข้อมูลสำเร็จ");
             cancelEdit();
             fetchAdvisors();
         } else {
-            alert("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
+            showAlert("ข้อผิดพลาด", result.error || "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
         }
         setIsSubmitting(false);
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm("ยืนยันการลบข้อมูลครูที่ปรึกษาท่านนี้?")) return;
-
-        const pin = prompt("กรุณาใส่รหัสผ่านเพื่อยืนยันการลบ:");
-        if (pin === null) return; // User cancelled the prompt
-
-        const result = await deleteAdvisorAction(id, pin);
-        if (result.success) {
-            if (editId === id) {
-                cancelEdit();
-            }
-            fetchAdvisors();
-        } else {
-            alert(result.error || "ลบข้อมูลไม่สำเร็จ");
-        }
+    const handleDelete = (id: string) => {
+        showConfirm("ยืนยันการลบข้อมูล", "คุณต้องการลบข้อมูลครูที่ปรึกษาท่านนี้ใช่หรือไม่?", () => {
+            setTimeout(() => {
+                showPrompt("ยืนยันด้วยรหัสผ่าน", "กรุณาใส่รหัสผ่านเพื่อยืนยันการลบ:", async (pin) => {
+                    setIsSubmitting(true);
+                    const result = await deleteAdvisorAction(id, pin);
+                    if (result.success) {
+                        if (editId === id) {
+                            cancelEdit();
+                        }
+                        fetchAdvisors();
+                        showAlert("สำเร็จ", "ลบข้อมูลสำเร็จ");
+                    } else {
+                        showAlert("ข้อผิดพลาด", result.error || "ลบข้อมูลไม่สำเร็จ");
+                    }
+                    setIsSubmitting(false);
+                });
+            }, 300);
+        });
     };
 
     return (
@@ -194,8 +249,8 @@ export default function AdvisorManagement() {
                                     type="submit"
                                     disabled={isSubmitting}
                                     className={`flex-1 py-2 rounded-md transition-colors flex items-center justify-center gap-2 shadow-sm ${editId
-                                            ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
-                                            : 'bg-orange-500 hover:bg-orange-600 text-white'
+                                        ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                                        : 'bg-orange-500 hover:bg-orange-600 text-white'
                                         } ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
                                 >
                                     {isSubmitting ? 'กำลังบันทึก...' : (editId ? <><SaveIcon size={18} /> แก้ไขข้อมูล</> : <><PlusIcon size={18} /> เพิ่มข้อมูล</>)}
@@ -273,6 +328,54 @@ export default function AdvisorManagement() {
                     </div>
                 </div>
             </div>
+
+            {/* Custom Modal Dialog */}
+            {dialog.isOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm shadow-xl">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-200">
+                        <div className={`p-4 border-b flex items-center gap-3 ${dialog.title === 'ข้อผิดพลาด' ? 'bg-red-50 text-red-700' : 'bg-orange-50 text-orange-800'}`}>
+                            <AlertCircle size={24} className={dialog.title === 'ข้อผิดพลาด' ? 'text-red-500' : 'text-orange-500'} />
+                            <h3 className="font-bold text-lg">{dialog.title}</h3>
+                        </div>
+                        <div className="p-6">
+                            <p className="text-gray-700 mb-4">{dialog.message}</p>
+                            {dialog.type === 'prompt' && (
+                                <input
+                                    type="password"
+                                    autoFocus
+                                    className="w-full border-2 border-gray-200 bg-gray-50 text-gray-900 text-lg sm:text-xl tracking-widest font-bold rounded-lg p-3 sm:p-4 outline-none focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/20 transition-all placeholder:text-gray-400 placeholder:text-base placeholder:font-normal placeholder:tracking-normal"
+                                    placeholder="ใส่รหัสผ่านที่นี่..."
+                                    value={dialog.inputValue}
+                                    onChange={(e) => setDialog(prev => ({ ...prev, inputValue: e.target.value }))}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            dialog.onConfirm(dialog.inputValue);
+                                        }
+                                    }}
+                                />
+                            )}
+                        </div>
+                        <div className="flex gap-3 justify-end px-6 py-4 bg-gray-50 border-t">
+                            {(dialog.type === 'confirm' || dialog.type === 'prompt') && (
+                                <button
+                                    type="button"
+                                    onClick={closeDialog}
+                                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors font-medium"
+                                >
+                                    ยกเลิก
+                                </button>
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => dialog.onConfirm(dialog.type === 'prompt' ? dialog.inputValue : undefined)}
+                                className={`px-6 py-2 rounded-md transition-colors text-white font-medium shadow-sm ${dialog.title === 'ข้อผิดพลาด' ? 'bg-red-500 hover:bg-red-600' : 'bg-orange-500 hover:bg-orange-600'}`}
+                            >
+                                {dialog.type === 'alert' ? 'ตกลง' : 'ยืนยัน'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
