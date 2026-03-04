@@ -1,5 +1,6 @@
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 import { JWT } from 'google-auth-library';
+import { driveService } from './google-drive';
 
 // Types
 export interface Advisor {
@@ -97,7 +98,7 @@ export class GoogleSheetService {
                 const room = row.get('ห้อง') || '';
                 const classLevel = row.get('ระดับชั้น') || '';
                 const department = row.get('สาขาวิชา') || '';
-                
+
                 const id = `${name}-${classLevel}-${room}`.replace(/\s+/g, '-');
 
                 return {
@@ -154,10 +155,10 @@ export class GoogleSheetService {
                 const name = row.get('ครูที่ปรึกษา') || '';
                 const room = row.get('ห้อง') || '';
                 const classLevel = row.get('ระดับชั้น') || '';
-                
+
                 const rowId = `${name}-${classLevel}-${room}`.replace(/\s+/g, '-');
 
-                return rowId === oldId; 
+                return rowId === oldId;
             });
 
             if (rowToUpdate) {
@@ -184,14 +185,14 @@ export class GoogleSheetService {
             if (!sheet) return;
 
             const rows = await sheet.getRows();
-            
+
             const rowToDelete = rows.find(row => {
                 const name = row.get('ครูที่ปรึกษา') || '';
                 const room = row.get('ห้อง') || '';
                 const classLevel = row.get('ระดับชั้น') || '';
 
                 const rowId = `${name}-${classLevel}-${room}`.replace(/\s+/g, '-');
-                
+
                 return rowId === id;
             });
 
@@ -223,9 +224,9 @@ export class GoogleSheetService {
 
         try {
             const headers = [
-                'id', 'term', 'academicYear', 'week', 'date', 
-                'advisorName', 'department', 'classLevel', 'room', 
-                'topic', 'totalStudents', 'presentStudents', 
+                'id', 'term', 'academicYear', 'week', 'date',
+                'advisorName', 'department', 'classLevel', 'room',
+                'topic', 'totalStudents', 'presentStudents',
                 'absentStudents', 'photoUrl', 'timestamp'
             ];
 
@@ -317,6 +318,57 @@ export class GoogleSheetService {
         } catch (error) {
             console.error("Error fetching reports:", error);
             return [...MOCK_REPORTS];
+        }
+    }
+    async deleteReports(ids: string[]): Promise<void> {
+        if (!this.isConnected) await this.connect();
+        if (!this.doc) return;
+
+        try {
+            // Step 1: Collect all photoUrls before deleting rows
+            const photoUrls: string[] = [];
+            const sheet = this.doc.sheetsByTitle['Reports'];
+            if (sheet) {
+                const rows = await sheet.getRows();
+                const toDelete = rows.filter(row => ids.includes(row.get('id')));
+
+                // Collect photo URLs (may be comma-separated)
+                toDelete.forEach(row => {
+                    const raw = row.get('photoUrl');
+                    if (raw && raw.trim()) {
+                        raw.split(',').forEach((url: string) => {
+                            const trimmed = url.trim();
+                            if (trimmed) photoUrls.push(trimmed);
+                        });
+                    }
+                });
+
+                // Delete rows in reverse order
+                for (const row of [...toDelete].reverse()) {
+                    await row.delete();
+                }
+            }
+
+            // Step 2: Also delete from per-term sub-sheets
+            const allSheets = Object.values(this.doc.sheetsByTitle);
+            for (const subSheet of allSheets) {
+                if (subSheet.title === 'Reports' || subSheet.title === 'Advisors') continue;
+                try {
+                    const rows = await subSheet.getRows();
+                    const toDelete = rows.filter(row => ids.includes(row.get('id')));
+                    for (const row of [...toDelete].reverse()) {
+                        await row.delete();
+                    }
+                } catch { /* skip sheets with no 'id' column */ }
+            }
+
+            // Step 3: Delete Drive photos (best-effort, won't throw)
+            for (const url of photoUrls) {
+                await driveService.deleteFile(url);
+            }
+        } catch (error) {
+            console.error('Error deleting reports:', error);
+            throw error;
         }
     }
 }

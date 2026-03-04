@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import AdvisorSelector from "./AdvisorSelector";
 import { Advisor, HomeroomReport } from "@/lib/google-sheets";
 import { saveReportAction, uploadPhotosAction, getReportsAction } from "@/app/actions";
-import { CalendarIcon, UploadCloudIcon, XIcon, ImageIcon } from "lucide-react";
+import { CalendarIcon, UploadCloudIcon, XIcon, ImageIcon, AlertCircle, CheckCircle2 } from "lucide-react";
 import Image from "next/image";
 
 export default function HomeroomForm() {
@@ -32,6 +32,12 @@ export default function HomeroomForm() {
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Custom alert modal
+    const [modal, setModal] = useState({ isOpen: false, title: '', message: '', isSuccess: false });
+    const showAlert = (title: string, message: string, isSuccess = false) =>
+        setModal({ isOpen: true, title, message, isSuccess });
+    const closeModal = () => setModal(prev => ({ ...prev, isOpen: false }));
 
     // History State
     const [allReports, setAllReports] = useState<HomeroomReport[]>([]);
@@ -121,7 +127,7 @@ export default function HomeroomForm() {
         const files = Array.from(e.target.files || []);
 
         if (files.length + selectedFiles.length > 3) {
-            alert("อัปโหลดได้สูงสุด 3 รูปภาพ");
+            showAlert("แจ้งเตือน", "อัปโหลดได้สูงสุด 3 รูปภาพ");
             return;
         }
 
@@ -148,7 +154,7 @@ export default function HomeroomForm() {
         e.preventDefault();
 
         if (!selectedAdvisor) {
-            alert("กรุณาเลือกครูที่ปรึกษา");
+            showAlert("แจ้งเตือน", "กรุณาเลือกครูที่ปรึกษา");
             return;
         }
 
@@ -188,7 +194,7 @@ export default function HomeroomForm() {
                 photoUrl: photoUrls.join(","),
             });
 
-            alert("บันทึกข้อมูลและอัปโหลดรูปภาพเรียบร้อยแล้ว");
+            showAlert("สำเร็จ", "บันทึกข้อมูลและอัปโหลดรูปภาพเรียบร้อยแล้ว", true);
 
             // Reset form
             setFormData(prev => ({
@@ -203,248 +209,281 @@ export default function HomeroomForm() {
             setImagePreviews([]);
         } catch (error) {
             console.error("[Form] Error:", error);
-            alert("เกิดข้อผิดพลาดในการบันทึก: " + (error instanceof Error ? error.message : "Unknown error"));
+            showAlert("ข้อผิดพลาด", "เกิดข้อผิดพลาดในการบันทึก: " + (error instanceof Error ? error.message : "Unknown error"));
         } finally {
             setIsSubmitting(false);
         }
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <>
+            <form onSubmit={handleSubmit} className="space-y-6">
 
-            <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700">ภาคเรียนที่</label>
-                    <select
-                        value={term}
-                        onChange={(e) => setTerm(e.target.value)}
-                        className="border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
-                    >
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                    </select>
-                </div>
-                <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700">ปีการศึกษา</label>
-                    <select
-                        value={academicYear}
-                        onChange={(e) => setAcademicYear(e.target.value)}
-                        className="border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
-                    >
-                        {years.map((y) => (
-                            <option key={y} value={y}>{y}</option>
-                        ))}
-                    </select>
-                </div>
-            </div>
-
-            <AdvisorSelector year={Number(academicYear)} onAdvisorSelect={handleAdvisorSelect} />
-
-            <div className="grid grid-cols-1 gap-6">
-                <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700">ระดับชั้น</label>
-                    <input
-                        type="text"
-                        className="border border-gray-300 rounded-md p-2 bg-gray-100 text-gray-900"
-                        value={selectedAdvisor?.classLevel || ""}
-                        readOnly
-                    />
-                </div>
-                <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700">ห้อง</label>
-                    <input
-                        type="text"
-                        className="border border-gray-300 rounded-md p-2 bg-gray-100 text-gray-900"
-                        value={selectedAdvisor?.room || ""}
-                        readOnly
-                    />
-                </div>
-            </div>
-
-            <hr className="border-gray-200" />
-
-            <div className="space-y-4">
-                <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700">สัปดาห์ที่</label>
-                    <input
-                        type="number"
-                        name="week"
-                        min="1"
-                        value={formData.week}
-                        onChange={handleChange}
-                        className="border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
-                        required
-                    />
-                </div>
-
-                <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700">วันที่</label>
-                    <div className="relative">
-                        <input
-                            type="date"
-                            name="date"
-                            value={formData.date}
-                            onChange={handleChange}
-                            className="border border-gray-300 rounded-md p-2 w-full focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
-                            required
-                        />
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-gray-700">ภาคเรียนที่</label>
+                        <select
+                            value={term}
+                            onChange={(e) => setTerm(e.target.value)}
+                            className="border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
+                        >
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                        </select>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-gray-700">ปีการศึกษา</label>
+                        <select
+                            value={academicYear}
+                            onChange={(e) => setAcademicYear(e.target.value)}
+                            className="border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
+                        >
+                            {years.map((y) => (
+                                <option key={y} value={y}>{y}</option>
+                            ))}
+                        </select>
                     </div>
                 </div>
 
-                <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700">เรื่องที่อบรม</label>
-                    <textarea
-                        name="topic"
-                        value={formData.topic}
-                        onChange={handleChange}
-                        rows={4}
-                        className="border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
-                        required
-                    />
-                </div>
+                <AdvisorSelector year={Number(academicYear)} onAdvisorSelect={handleAdvisorSelect} />
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 gap-6">
                     <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">จำนวนทั้งหมด</label>
+                        <label className="text-sm font-medium text-gray-700">ระดับชั้น</label>
                         <input
-                            type="number"
-                            name="totalStudents"
-                            min="0"
-                            value={formData.totalStudents}
-                            onChange={handleChange}
-                            className="border border-gray-300 rounded-md p-2 outline-none text-gray-900"
-                            required
+                            type="text"
+                            className="border border-gray-300 rounded-md p-2 bg-gray-100 text-gray-900"
+                            value={selectedAdvisor?.classLevel || ""}
+                            readOnly
                         />
                     </div>
                     <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">จำนวนที่มา</label>
+                        <label className="text-sm font-medium text-gray-700">ห้อง</label>
                         <input
-                            type="number"
-                            name="presentStudents"
-                            min="0"
-                            value={formData.presentStudents}
-                            onChange={handleChange}
-                            className="border border-gray-300 rounded-md p-2 outline-none text-gray-900"
-                            required
-                        />
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">จำนวนที่ขาด</label>
-                        <input
-                            type="number"
-                            name="absentStudents"
-                            value={formData.absentStudents}
-                            className="border border-gray-300 rounded-md p-2 bg-gray-100 text-gray-900 font-medium"
+                            type="text"
+                            className="border border-gray-300 rounded-md p-2 bg-gray-100 text-gray-900"
+                            value={selectedAdvisor?.room || ""}
                             readOnly
                         />
                     </div>
                 </div>
 
-                <div className="flex flex-col gap-2">
-                    <label className="text-sm font-medium text-gray-700">อัปโหลดรูปภาพกิจกรรม (1-3 ภาพ)</label>
-                    <div className="border border-dashed border-gray-300 rounded-md p-4 bg-gray-50 flex flex-col items-center justify-center gap-4">
-                        <div className="flex gap-4 flex-wrap justify-center">
-                            {imagePreviews.map((src, index) => (
-                                <div key={index} className="relative w-24 h-24 rounded-md overflow-hidden border">
-                                    <Image src={src} alt="Preview" fill className="object-cover" />
-                                    <button
-                                        type="button"
-                                        onClick={() => removeFile(index)}
-                                        className="absolute top-0 right-0 bg-red-500 text-white rounded-bl-md p-1 hover:bg-red-600"
-                                    >
-                                        <XIcon size={12} />
-                                    </button>
-                                </div>
-                            ))}
-                            {imagePreviews.length < 3 && (
-                                <label className="w-24 h-24 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md cursor-pointer hover:bg-gray-100 transition-colors">
-                                    <UploadCloudIcon className="text-gray-400 mb-1" />
-                                    <span className="text-xs text-gray-500">เลือกรูป</span>
-                                    <input
-                                        type="file"
-                                        accept="image/png, image/jpeg, image/jpg"
-                                        multiple
-                                        className="hidden"
-                                        onChange={handleFileChange}
-                                    />
-                                </label>
-                            )}
+                <hr className="border-gray-200" />
+
+                <div className="space-y-4">
+                    <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-gray-700">สัปดาห์ที่</label>
+                        <input
+                            type="number"
+                            name="week"
+                            min="1"
+                            value={formData.week}
+                            onChange={handleChange}
+                            className="border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
+                            required
+                        />
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-gray-700">วันที่</label>
+                        <div className="relative">
+                            <input
+                                type="date"
+                                name="date"
+                                value={formData.date}
+                                onChange={handleChange}
+                                className="border border-gray-300 rounded-md p-2 w-full focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
+                                required
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-gray-700">เรื่องที่อบรม</label>
+                        <textarea
+                            name="topic"
+                            value={formData.topic}
+                            onChange={handleChange}
+                            rows={4}
+                            className="border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900"
+                            required
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="flex flex-col gap-2">
+                            <label className="text-sm font-medium text-gray-700">จำนวนทั้งหมด</label>
+                            <input
+                                type="number"
+                                name="totalStudents"
+                                min="0"
+                                value={formData.totalStudents}
+                                onChange={handleChange}
+                                className="border border-gray-300 rounded-md p-2 outline-none text-gray-900"
+                                required
+                            />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <label className="text-sm font-medium text-gray-700">จำนวนที่มา</label>
+                            <input
+                                type="number"
+                                name="presentStudents"
+                                min="0"
+                                value={formData.presentStudents}
+                                onChange={handleChange}
+                                className="border border-gray-300 rounded-md p-2 outline-none text-gray-900"
+                                required
+                            />
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <label className="text-sm font-medium text-gray-700">จำนวนที่ขาด</label>
+                            <input
+                                type="number"
+                                name="absentStudents"
+                                value={formData.absentStudents}
+                                className="border border-gray-300 rounded-md p-2 bg-gray-100 text-gray-900 font-medium"
+                                readOnly
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-gray-700">อัปโหลดรูปภาพกิจกรรม (1-3 ภาพ)</label>
+                        <div className="border border-dashed border-gray-300 rounded-md p-4 bg-gray-50 flex flex-col items-center justify-center gap-4">
+                            <div className="flex gap-4 flex-wrap justify-center">
+                                {imagePreviews.map((src, index) => (
+                                    <div key={index} className="relative w-24 h-24 rounded-md overflow-hidden border">
+                                        <Image src={src} alt="Preview" fill className="object-cover" />
+                                        <button
+                                            type="button"
+                                            onClick={() => removeFile(index)}
+                                            className="absolute top-0 right-0 bg-red-500 text-white rounded-bl-md p-1 hover:bg-red-600"
+                                        >
+                                            <XIcon size={12} />
+                                        </button>
+                                    </div>
+                                ))}
+                                {imagePreviews.length < 3 && (
+                                    <label className="w-24 h-24 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md cursor-pointer hover:bg-gray-100 transition-colors">
+                                        <UploadCloudIcon className="text-gray-400 mb-1" />
+                                        <span className="text-xs text-gray-500">เลือกรูป</span>
+                                        <input
+                                            type="file"
+                                            accept="image/png, image/jpeg, image/jpg"
+                                            multiple
+                                            className="hidden"
+                                            onChange={handleFileChange}
+                                        />
+                                    </label>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-md transition-colors disabled:bg-blue-300"
-            >
-                {isSubmitting ? "กำลังบันทึก..." : "บันทึกข้อมูล"}
-            </button>
+                <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-md transition-colors disabled:bg-blue-300"
+                >
+                    {isSubmitting ? "กำลังบันทึก..." : "บันทึกข้อมูล"}
+                </button>
 
-            {/* Report History Section */}
-            {selectedAdvisor && (
-                <div className="mt-8 pt-6 border-t-2 border-gray-300">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                        ประวัติการบันทึก (Report History)
-                    </h3>
+                {/* Report History Section */}
+                {selectedAdvisor && (
+                    <div className="mt-8 pt-6 border-t-2 border-gray-300">
+                        <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                            ประวัติการบันทึก (Report History)
+                        </h3>
 
-                    {historyReports.length === 0 ? (
-                        <div className="text-center text-gray-400 py-8 bg-gray-50 rounded-lg">
-                            <p>ไม่พบรายการบันทึก สำหรับ {selectedAdvisor.name} ภาคเรียนที่ {term}/{academicYear}</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-3">
-                            <div className="bg-blue-50 p-3 rounded-lg mb-4">
-                                <p className="text-sm text-gray-700">
-                                    <span className="font-semibold">{selectedAdvisor.name}</span> - {selectedAdvisor.department} ระดับชั้น {selectedAdvisor.classLevel} ห้อง {selectedAdvisor.room}
-                                </p>
-                                <p className="text-sm text-gray-600">ภาคเรียนที่ {term}/{academicYear} - พบ {historyReports.length} รายการ</p>
+                        {historyReports.length === 0 ? (
+                            <div className="text-center text-gray-400 py-8 bg-gray-50 rounded-lg">
+                                <p>ไม่พบรายการบันทึก สำหรับ {selectedAdvisor.name} ภาคเรียนที่ {term}/{academicYear}</p>
                             </div>
+                        ) : (
+                            <div className="space-y-3">
+                                <div className="bg-blue-50 p-3 rounded-lg mb-4">
+                                    <p className="text-sm text-gray-700">
+                                        <span className="font-semibold">{selectedAdvisor.name}</span> - {selectedAdvisor.department} ระดับชั้น {selectedAdvisor.classLevel} ห้อง {selectedAdvisor.room}
+                                    </p>
+                                    <p className="text-sm text-gray-600">ภาคเรียนที่ {term}/{academicYear} - พบ {historyReports.length} รายการ</p>
+                                </div>
 
-                            <div className="overflow-x-auto">
-                                <table className="w-full border-collapse border border-gray-300">
-                                    <thead>
-                                        <tr className="bg-gray-100">
-                                            <th className="border border-gray-300 p-3 text-left text-sm font-semibold text-gray-700 w-24">สัปดาห์</th>
-                                            <th className="border border-gray-300 p-3 text-left text-sm font-semibold text-gray-700 w-32">วันที่</th>
-                                            <th className="border border-gray-300 p-3 text-left text-sm font-semibold text-gray-700">หัวข้อกิจกรรม</th>
-                                            <th className="border border-gray-300 p-3 text-center text-sm font-semibold text-gray-700 w-20">จำนวน</th>
-                                            <th className="border border-gray-300 p-3 text-center text-sm font-semibold text-gray-700 w-20">มา</th>
-                                            <th className="border border-gray-300 p-3 text-center text-sm font-semibold text-gray-700 w-20">ขาด</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {historyReports.map((report, index) => (
-                                            <tr key={report.id || index} className="hover:bg-gray-50 transition-colors">
-                                                <td className="border border-gray-300 p-3 text-sm text-gray-800">
-                                                    สัปดาห์ {report.week}
-                                                </td>
-                                                <td className="border border-gray-300 p-3 text-sm text-gray-800">
-                                                    {report.date}
-                                                </td>
-                                                <td className="border border-gray-300 p-3 text-sm text-gray-700">
-                                                    {report.topic}
-                                                </td>
-                                                <td className="border border-gray-300 p-3 text-center text-sm text-gray-800">
-                                                    {report.totalStudents}
-                                                </td>
-                                                <td className="border border-gray-300 p-3 text-center text-sm text-green-600 font-medium">
-                                                    {report.presentStudents}
-                                                </td>
-                                                <td className="border border-gray-300 p-3 text-center text-sm text-red-600 font-medium">
-                                                    {report.absentStudents}
-                                                </td>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full border-collapse border border-gray-300">
+                                        <thead>
+                                            <tr className="bg-gray-100">
+                                                <th className="border border-gray-300 p-3 text-left text-sm font-semibold text-gray-700 w-24">สัปดาห์</th>
+                                                <th className="border border-gray-300 p-3 text-left text-sm font-semibold text-gray-700 w-32">วันที่</th>
+                                                <th className="border border-gray-300 p-3 text-left text-sm font-semibold text-gray-700">หัวข้อกิจกรรม</th>
+                                                <th className="border border-gray-300 p-3 text-center text-sm font-semibold text-gray-700 w-20">จำนวน</th>
+                                                <th className="border border-gray-300 p-3 text-center text-sm font-semibold text-gray-700 w-20">มา</th>
+                                                <th className="border border-gray-300 p-3 text-center text-sm font-semibold text-gray-700 w-20">ขาด</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                        </thead>
+                                        <tbody>
+                                            {historyReports.map((report, index) => (
+                                                <tr key={report.id || index} className="hover:bg-gray-50 transition-colors">
+                                                    <td className="border border-gray-300 p-3 text-sm text-gray-800">
+                                                        สัปดาห์ {report.week}
+                                                    </td>
+                                                    <td className="border border-gray-300 p-3 text-sm text-gray-800">
+                                                        {report.date}
+                                                    </td>
+                                                    <td className="border border-gray-300 p-3 text-sm text-gray-700">
+                                                        {report.topic}
+                                                    </td>
+                                                    <td className="border border-gray-300 p-3 text-center text-sm text-gray-800">
+                                                        {report.totalStudents}
+                                                    </td>
+                                                    <td className="border border-gray-300 p-3 text-center text-sm text-green-600 font-medium">
+                                                        {report.presentStudents}
+                                                    </td>
+                                                    <td className="border border-gray-300 p-3 text-center text-sm text-red-600 font-medium">
+                                                        {report.absentStudents}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </form>
+
+            {/* Custom Alert Modal */}
+            {
+                modal.isOpen && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                        <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden transform transition-all">
+                            <div className={`p-4 border-b flex items-center gap-3 ${modal.isSuccess ? 'bg-green-50 text-green-800' : modal.title === 'ข้อผิดพลาด' ? 'bg-red-50 text-red-700' : 'bg-orange-50 text-orange-800'}`}>
+                                {modal.isSuccess
+                                    ? <CheckCircle2 size={24} className="text-green-500" />
+                                    : <AlertCircle size={24} className={modal.title === 'ข้อผิดพลาด' ? 'text-red-500' : 'text-orange-500'} />}
+                                <h3 className="font-bold text-lg">{modal.title}</h3>
+                            </div>
+                            <div className="p-6">
+                                <p className="text-gray-700">{modal.message}</p>
+                            </div>
+                            <div className="flex justify-end px-6 py-4 bg-gray-50 border-t">
+                                <button
+                                    type="button"
+                                    onClick={closeModal}
+                                    className={`px-6 py-2 rounded-md text-white font-medium shadow-sm transition-colors ${modal.isSuccess ? 'bg-green-500 hover:bg-green-600'
+                                        : modal.title === 'ข้อผิดพลาด' ? 'bg-red-500 hover:bg-red-600'
+                                            : 'bg-orange-500 hover:bg-orange-600'
+                                        }`}
+                                >
+                                    ตกลง
+                                </button>
                             </div>
                         </div>
-                    )}
-                </div>
-            )}
-        </form>
+                    </div>
+                )
+            }
+        </>
     );
 }

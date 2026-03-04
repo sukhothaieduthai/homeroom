@@ -1,11 +1,13 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { HomeroomReport, Advisor } from "@/lib/google-sheets";
 import { getReportsAction } from "@/app/actions";
 import AdvisorSelector from "./AdvisorSelector";
-import { DownloadIcon, FileTextIcon, TableIcon, ImageIcon } from "lucide-react";
+import { DownloadIcon, FileTextIcon, TableIcon, ImageIcon, ClipboardListIcon, UsersIcon, BookOpenIcon } from "lucide-react";
 import { convertToDriveDirectUrl } from "@/lib/drive-utils";
+
+type ViewMode = "cover" | "table" | "photos" | "counseling-form" | "counseling-table" | "student-tracking" | "summary-form";
 
 export default function FullReport() {
     // Selectors State
@@ -25,7 +27,7 @@ export default function FullReport() {
     const [isGenerating, setIsGenerating] = useState(false);
 
     // View State
-    const [viewMode, setViewMode] = useState<"cover" | "table" | "photos">("cover");
+    const [viewMode, setViewMode] = useState<ViewMode>("cover");
 
     useEffect(() => {
         async function fetchReports() {
@@ -54,20 +56,14 @@ export default function FullReport() {
         const photos: string[] = [];
         rigorousFiltered.forEach(r => {
             if (r.photoUrl) {
-                console.log("Original photoUrl from DB:", r.photoUrl);
-                // Split by comma if multiple, trim whitespace, and convert to direct URLs
                 r.photoUrl.split(',').forEach(url => {
                     const trimmedUrl = url.trim();
                     if (trimmedUrl) {
-                        const convertedUrl = convertToDriveDirectUrl(trimmedUrl);
-                        console.log("Converted URL:", convertedUrl);
-                        photos.push(convertedUrl);
+                        photos.push(convertToDriveDirectUrl(trimmedUrl));
                     }
                 });
             }
         });
-        console.log("Total photos found:", photos.length);
-        console.log("Photo URLs:", photos);
         setReportPhotos(photos);
 
     }, [allReports, term, academicYear, selectedAdvisor]);
@@ -85,22 +81,18 @@ export default function FullReport() {
 
         setIsGenerating(true);
         try {
-            // Prepare photo URLs (no conversion needed, pass URLs directly)
             let photosToSend: string[] = [];
-
             if (viewMode === 'photos') {
                 if (reportPhotos.length === 0) {
                     alert("ไม่พบรูปภาพ");
                     setIsGenerating(false);
                     return;
                 }
-                // Pass URLs directly (no base64 conversion to avoid CORS)
                 photosToSend = reportPhotos;
             }
 
-            // 2. Prepare Payload
             const payload = {
-                mode: viewMode, // 'cover', 'table', or 'photos'
+                mode: viewMode,
                 data: {
                     term,
                     academicYear,
@@ -111,7 +103,6 @@ export default function FullReport() {
                 }
             };
 
-            // 3. Call API
             const response = await fetch('/api/pdf', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -120,7 +111,6 @@ export default function FullReport() {
 
             if (!response.ok) throw new Error("Failed to generate PDF");
 
-            // 4. Download Blob
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -139,23 +129,33 @@ export default function FullReport() {
         }
     };
 
-    const getButtonLabel = () => {
-        if (isGenerating) return "กำลังสร้าง PDF...";
-        if (viewMode === 'cover') return "Download (หน้าปก)";
-        if (viewMode === 'table') return "Download (ตาราง)";
-        if (viewMode === 'photos') return "Download (รูปภาพ)";
-        return "Download PDF";
-    };
-
     // Pagination Logic for Table (6 items per page)
-    const tableChunks = [];
+    const tableChunks: HomeroomReport[][] = [];
     if (filteredReports.length > 0) {
         for (let i = 0; i < filteredReports.length; i += 6) {
             tableChunks.push(filteredReports.slice(i, i + 6));
         }
     } else {
-        tableChunks.push([]); // empty page
+        tableChunks.push([]);
     }
+
+    const tabButtons: { mode: ViewMode; icon: React.ReactNode; label: string }[] = [
+        { mode: "cover", icon: <FileTextIcon size={18} />, label: "หน้าปก" },
+        { mode: "table", icon: <TableIcon size={18} />, label: "ตาราง" },
+        { mode: "photos", icon: <ImageIcon size={18} />, label: "รูปภาพ" },
+        { mode: "counseling-form", icon: <ClipboardListIcon size={18} />, label: "แบบบันทึกให้คำปรึกษา" },
+        { mode: "counseling-table", icon: <BookOpenIcon size={18} />, label: "รายงานให้คำปรึกษา (ตาราง)" },
+        { mode: "student-tracking", icon: <UsersIcon size={18} />, label: "ติดตามนักเรียน" },
+        { mode: "summary-form", icon: <FileTextIcon size={18} />, label: "สรุปปัญหา/ข้อเสนอแนะ" },
+    ];
+
+    const dotLine = (width: string = "w-40") => (
+        <div className={`border-b border-dotted border-black ${width} mb-1`}></div>
+    );
+
+    const fullLine = () => (
+        <div className="border-b border-black w-full my-1"></div>
+    );
 
     return (
         <div className="space-y-6">
@@ -190,7 +190,7 @@ export default function FullReport() {
                 </div>
             </div>
 
-            {/* Content Specific Controls (e.g. Remarks for Table) */}
+            {/* Remarks for Table mode */}
             {selectedAdvisor && viewMode === 'table' && (
                 <div className="bg-white p-4 rounded-lg border border-gray-200 flex flex-col gap-2 shadow-sm">
                     <label className="text-sm font-medium text-gray-700">หมายเหตุ (แสดงท้ายตารางรายงาน)</label>
@@ -203,13 +203,12 @@ export default function FullReport() {
                 </div>
             )}
 
-
-            {/* Action Bar (Download) - Top */}
+            {/* Download Button */}
             {selectedAdvisor && (
                 <div className="flex justify-end">
                     <button
                         onClick={handleExport}
-                        disabled={isGenerating || filteredReports.length === 0}
+                        disabled={isGenerating || (viewMode !== 'counseling-form' && viewMode !== 'counseling-table' && viewMode !== 'student-tracking' && viewMode !== 'summary-form' && filteredReports.length === 0)}
                         className="flex items-center justify-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-all font-semibold shadow-md"
                     >
                         <DownloadIcon size={20} />
@@ -218,29 +217,21 @@ export default function FullReport() {
                 </div>
             )}
 
-            {/* View Tabs */}
+            {/* View Mode Tabs */}
             <div className="flex gap-2 w-full overflow-x-auto pb-2">
-                <button
-                    onClick={() => setViewMode("cover")}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-bold transition-all border ${viewMode === "cover" ? "bg-blue-600 text-white border-blue-600 shadow-md" : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"}`}
-                >
-                    <FileTextIcon size={20} /> หน้าปก
-                </button>
-                <button
-                    onClick={() => setViewMode("table")}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-bold transition-all border ${viewMode === "table" ? "bg-blue-600 text-white border-blue-600 shadow-md" : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"}`}
-                >
-                    <TableIcon size={20} /> ตาราง
-                </button>
-                <button
-                    onClick={() => setViewMode("photos")}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-bold transition-all border ${viewMode === "photos" ? "bg-blue-600 text-white border-blue-600 shadow-md" : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"}`}
-                >
-                    <ImageIcon size={20} /> รูปภาพ
-                </button>
+                {tabButtons.map(({ mode, icon, label }) => (
+                    <button
+                        key={mode}
+                        onClick={() => setViewMode(mode)}
+                        className={`flex-shrink-0 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-bold transition-all border text-sm ${viewMode === mode
+                            ? "bg-blue-600 text-white border-blue-600 shadow-md"
+                            : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"
+                            }`}
+                    >
+                        {icon} {label}
+                    </button>
+                ))}
             </div>
-
-
 
             {/* View Content */}
             <div className="bg-white border text-gray-900 border-gray-200 shadow-sm rounded-lg min-h-[500px] p-4 sm:p-8 bg-gray-50 overflow-auto">
@@ -251,13 +242,13 @@ export default function FullReport() {
                         </div>
                     ) : (
                         <>
+                            {/* ===== EXISTING: COVER ===== */}
                             {viewMode === "cover" && (
                                 <div className="w-[210mm] shrink-0 border border-gray-300 p-12 bg-white shadow-lg relative min-h-[297mm]">
                                     <div className="flex flex-col items-center justify-between h-full text-center min-h-[250mm]">
                                         <div className="space-y-6 mt-10">
                                             <h1 className="text-3xl font-bold font-serif">รายงานการบันทึกกิจกรรมโฮมรูม (HOME ROOM)</h1>
                                             <h2 className="text-2xl font-semibold font-serif">ภาคเรียนที่ {term} ปีการศึกษา {academicYear}</h2>
-
                                             <div className="py-12">
                                                 <h3 className="text-xl font-medium">จัดทำโดย</h3>
                                                 <div className="mt-8 space-y-4">
@@ -267,7 +258,6 @@ export default function FullReport() {
                                                 </div>
                                             </div>
                                         </div>
-
                                         <div className="space-y-2 text-base text-gray-600 mb-10 w-full absolute bottom-10 left-0 right-0">
                                             <p className="font-semibold text-lg">วิทยาลัยอาชีวศึกษาสุโขทัย สถาบันการอาชีวศึกษาภาคเหนือ 3</p>
                                             <p>สำนักงานอาชีวศึกษาจังหวัดสุโขทัย</p>
@@ -277,52 +267,34 @@ export default function FullReport() {
                                 </div>
                             )}
 
+                            {/* ===== EXISTING: TABLE ===== */}
                             {viewMode === "table" && (
                                 <>
                                     {tableChunks.map((chunk, pageIndex) => (
                                         <div key={pageIndex} className="w-[210mm] shrink-0 border border-gray-300 p-12 bg-white shadow-lg flex flex-col min-h-[297mm]">
                                             <div className="flex-1 flex flex-col">
-                                                {/* Header Section - Original Layout */}
                                                 <div className="flex items-start mb-2">
                                                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                    <img
-                                                        src="/sukhothailogo.png"
-                                                        alt="Logo"
-                                                        className="w-16 h-16 mr-4 flex-shrink-0"
-                                                    />
+                                                    <img src="/sukhothailogo.png" alt="Logo" className="w-16 h-16 mr-4 flex-shrink-0" />
                                                     <div className="flex-1 text-center pt-1 mt-1">
                                                         <h1 className="text-sm font-bold leading-tight">แบบบันทึกกิจกรรมโฮมรูม ภาคเรียนที่ {term}/{academicYear}</h1>
                                                         <p className="text-xs mt-0.5">วิทยาลัยอาชีวศึกษาสุโขทัย</p>
                                                     </div>
                                                 </div>
-
-                                                {/* Class Info - Single Line */}
                                                 <div className="text-[11px] mb-1">
-                                                    <span className="font-normal">ระดับชั้น</span> {selectedAdvisor.classLevel}
-                                                    {'   '}
-                                                    <span className="font-normal">สาขาวิชา</span> {selectedAdvisor.department}
-                                                    {'   '}
-                                                    <span className="font-normal">ห้อง</span> {selectedAdvisor.room}
+                                                    <span>ระดับชั้น</span> {selectedAdvisor.classLevel}{'   '}
+                                                    <span>สาขาวิชา</span> {selectedAdvisor.department}{'   '}
+                                                    <span>ห้อง</span> {selectedAdvisor.room}
                                                 </div>
-
-                                                {/* Advisor Info */}
                                                 <div className="text-[11px] mb-2">
-                                                    <span className="font-normal">ครูที่ปรึกษา</span> {selectedAdvisor.name}
+                                                    <span>ครูที่ปรึกษา</span> {selectedAdvisor.name}
                                                 </div>
-
-                                                {/* Table */}
                                                 <table className="w-full border-collapse border border-black mb-4 flex-1">
                                                     <thead>
                                                         <tr>
-                                                            <th className="border border-black p-1.5 text-[11px] font-medium bg-gray-100 w-[20%]" rowSpan={2}>
-                                                                สัปดาห์ที่<br />วัน/เวลา<br />สถานที่อบรม
-                                                            </th>
-                                                            <th className="border border-black p-1.5 text-[11px] font-medium bg-gray-100 w-[50%]" rowSpan={2}>
-                                                                เรื่อง/กิจกรรม/แนวทาง/เจ้าหน้าที่
-                                                            </th>
-                                                            <th className="border border-black p-1.5 text-[11px] font-medium bg-gray-100" colSpan={3}>
-                                                                ข้อมูลนักเรียน/นักศึกษา
-                                                            </th>
+                                                            <th className="border border-black p-1.5 text-[11px] font-medium bg-gray-100 w-[20%]" rowSpan={2}>สัปดาห์ที่<br />วัน/เวลา<br />สถานที่อบรม</th>
+                                                            <th className="border border-black p-1.5 text-[11px] font-medium bg-gray-100 w-[50%]" rowSpan={2}>เรื่อง/กิจกรรม/แนวทาง/เจ้าหน้าที่</th>
+                                                            <th className="border border-black p-1.5 text-[11px] font-medium bg-gray-100" colSpan={3}>ข้อมูลนักเรียน/นักศึกษา</th>
                                                         </tr>
                                                         <tr>
                                                             <th className="border border-black p-1 text-[10px] font-medium bg-gray-100 w-[10%]">จำนวน</th>
@@ -331,31 +303,23 @@ export default function FullReport() {
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        {chunk.length > 0 ? chunk.map((r, idx) => (
+                                                        {chunk.length > 0 ? chunk.map((r) => (
                                                             <tr key={r.id}>
                                                                 <td className="border border-black p-1.5 align-top text-[10px]">
                                                                     <div className="text-blue-700 font-medium">สัปดาห์ที่ {r.week} ({r.date})</div>
                                                                     <div className="text-gray-600 mt-0.5">เวลา 13.00-14.00 น.</div>
                                                                 </td>
-                                                                <td className="border border-black p-1.5 align-top text-[10px] leading-relaxed">
-                                                                    {r.topic}
-                                                                </td>
+                                                                <td className="border border-black p-1.5 align-top text-[10px] leading-relaxed">{r.topic}</td>
                                                                 <td className="border border-black p-1 text-center text-[10px]">{r.totalStudents}</td>
                                                                 <td className="border border-black p-1 text-center text-[10px]">{r.presentStudents}</td>
                                                                 <td className="border border-black p-1 text-center text-[10px]">{r.absentStudents}</td>
                                                             </tr>
                                                         )) : (
-                                                            <tr>
-                                                                <td colSpan={5} className="border border-black p-4 text-center text-gray-500 text-[10px]">
-                                                                    ไม่พบรายงาน
-                                                                </td>
-                                                            </tr>
+                                                            <tr><td colSpan={5} className="border border-black p-4 text-center text-gray-500 text-[10px]">ไม่พบรายงาน</td></tr>
                                                         )}
                                                     </tbody>
                                                 </table>
                                             </div>
-
-                                            {/* Footer - Display on every page */}
                                             <div className="text-[10px] mt-2">
                                                 <div className="flex justify-between items-center mb-2 px-1 w-full overflow-hidden">
                                                     <span className="whitespace-nowrap flex-shrink min-w-0 pr-2">จำนวนนักเรียนนักศึกษาขอรับคำปรึกษา (ตามแบบบันทึก).......................คน </span>
@@ -367,12 +331,11 @@ export default function FullReport() {
                                                     <span className="whitespace-nowrap flex-shrink min-w-0">พักการเรียน.......................คน</span>
                                                     <span className="whitespace-nowrap flex-shrink min-w-0">อื่นๆ (.............................................)........... คน</span>
                                                 </div>
-
                                                 <div className="flex justify-around items-end pt-1 mb-4">
                                                     <div className="text-center flex flex-col items-center">
                                                         <div className="flex items-end">
                                                             <span className="mr-1">ลงชื่อ</span>
-                                                            <div className="border-b border-dotted border-black w-32 mb-1"></div>
+                                                            {dotLine()}
                                                             <span className="ml-1">ครูที่ปรึกษา</span>
                                                         </div>
                                                         <div className="mt-1">({selectedAdvisor.name})</div>
@@ -380,18 +343,15 @@ export default function FullReport() {
                                                     <div className="text-center flex flex-col items-center">
                                                         <div className="flex items-end">
                                                             <span className="mr-1">ลงชื่อ</span>
-                                                            <div className="border-b border-dotted border-black w-32 mb-1"></div>
+                                                            {dotLine()}
                                                             <span className="ml-1">ครูที่ปรึกษา</span>
                                                         </div>
                                                         <div className="mt-1">(........................................................)</div>
                                                     </div>
                                                 </div>
-
                                                 <div className="flex mt-2 px-1 font-normal">
                                                     <span className="font-bold mr-2 w-12 whitespace-nowrap">หมายเหตุ</span>
-                                                    <div className="flex-1 whitespace-pre-wrap leading-tight">
-                                                        {reportRemarks || ""}
-                                                    </div>
+                                                    <div className="flex-1 whitespace-pre-wrap leading-tight">{reportRemarks || ""}</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -399,51 +359,31 @@ export default function FullReport() {
                                 </>
                             )}
 
+                            {/* ===== EXISTING: PHOTOS ===== */}
                             {viewMode === "photos" && (
                                 <>
                                     {reportPhotos.length > 0 ? (
-                                        // Paginate: 6 photos per page
                                         Array.from({ length: Math.ceil(reportPhotos.length / 6) }).map((_, pageIndex) => {
                                             const startIdx = pageIndex * 6;
                                             const pagePhotos = reportPhotos.slice(startIdx, startIdx + 6);
-
                                             return (
-                                                <div key={pageIndex} className="w-[210mm] shrink-0 border border-gray-300 p-12 bg-white shadow-lg relative min-h-[297mm]">
-                                                    {/* Header Section (repeated for each page) */}
+                                                <div key={pageIndex} className="w-[210mm] shrink-0 border border-gray-300 p-12 pb-10 bg-white shadow-lg relative min-h-[297mm]">
                                                     <div className="text-center mb-6 space-y-2">
-                                                        <h2 className="text-base font-medium leading-tight">
-                                                            ภาพการจัดกิจกรรมโฮมรูม ของครู{selectedAdvisor.name} และนักเรียน นักศึกษา
-                                                        </h2>
-                                                        <h3 className="text-sm font-normal">
-                                                            ภาคเรียนที่ {term}/{academicYear} วิทยาลัยอาชีวศึกษาสุโขทัย
-                                                        </h3>
-                                                        {pageIndex > 0 && (
-                                                            <p className="text-sm text-gray-600">(ต่อ)</p>
-                                                        )}
+                                                        <h2 className="text-base font-medium leading-tight">ภาพการจัดกิจกรรมโฮมรูม ของครู{selectedAdvisor.name} และนักเรียน นักศึกษา</h2>
+                                                        <h3 className="text-sm font-normal">ภาคเรียนที่ {term}/{academicYear} วิทยาลัยอาชีวศึกษาสุโขทัย</h3>
+                                                        {pageIndex > 0 && <p className="text-sm text-gray-600">(ต่อ)</p>}
                                                     </div>
-
-                                                    {/* Photo Grid */}
                                                     <div className="grid grid-cols-2 gap-x-4 gap-y-6 auto-rows-max flex-grow">
                                                         {pagePhotos.map((url, index) => (
                                                             <div key={startIdx + index} className="flex flex-col items-center">
                                                                 <div className="aspect-[4/3] w-full bg-gray-100 border border-gray-300 overflow-hidden relative">
                                                                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                                    <img
-                                                                        src={url}
-                                                                        alt={`Activity ${startIdx + index + 1}`}
-                                                                        className="w-full h-full object-cover"
-                                                                        referrerPolicy="no-referrer"
-                                                                        crossOrigin="anonymous"
-                                                                    />
+                                                                    <img src={url} alt={`Activity ${startIdx + index + 1}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" crossOrigin="anonymous" />
                                                                 </div>
                                                             </div>
                                                         ))}
                                                     </div>
-
-                                                    {/* Footer Motto */}
-                                                    <div className="text-center mt-auto pt-6 text-xl font-bold text-gray-800">
-                                                        “เรียนดี มีคุณธรรม”
-                                                    </div>
+                                                    <div className="absolute bottom-4 left-0 right-0 text-center text-xl font-bold text-gray-800">"เรียนดี มีคุณธรรม"</div>
                                                 </div>
                                             );
                                         })
@@ -455,6 +395,235 @@ export default function FullReport() {
                                     )}
                                 </>
                             )}
+
+                            {/* ===== NEW: แบบบันทึกให้คำปรึกษา (รายบุคคล) ===== */}
+                            {viewMode === "counseling-form" && (
+                                <div className="w-[210mm] shrink-0 border border-gray-300 p-10 pb-10 bg-white shadow-lg relative min-h-[297mm] text-[11px]">
+                                    <div className="text-center font-bold text-[12px] mb-4">แบบบันทึกให้คำปรึกษานักเรียน นักศึกษา (รายบุคคล)</div>
+
+                                    <div className="flex justify-end mb-3">
+                                        <span>วันที่............เดือน.......................พ.ศ......................</span>
+                                    </div>
+
+                                    <div className="mb-2">
+                                        <span>เริ่มเวลา.........................................................................</span>
+                                    </div>
+                                    <div className="font-semibold mb-1">ผู้ขอรับการปรึกษา</div>
+                                    <div className="mb-1 flex gap-4">
+                                        <span>ชื่อ................................สกุล...................................ชื่อเล่น..........................</span>
+                                    </div>
+                                    <div className="mb-3">
+                                        <span>ระดับชั้น..............ปีที่.........ห้อง..........เบอร์โทรศัพท์........................................</span>
+                                    </div>
+
+                                    <div className="mb-2 font-semibold">การพิจารณารับคำปรึกษา</div>
+                                    <div className="mb-3 flex flex-wrap gap-x-6 gap-y-1 text-[10px]">
+                                        <span>☐ สังเกตเห็นและเข้าไปช่วยเหลือเอง</span>
+                                        <span>☐ ผู้รับการปรึกษามาด้วยตนเอง</span>
+                                        <span>☐ ส่งต่อมาจาก..............</span>
+                                    </div>
+                                    <div className="mb-3 flex flex-wrap gap-x-6 gap-y-1 text-[10px]">
+                                        <span>☐ การพิจารณารับคำปรึกษาครั้งที่......</span>
+                                        <span>☐ เป็นครั้งแรก</span>
+                                        <span>☐ ต่อเนื่องเป็นครั้งที่......</span>
+                                        <span>☐ ต่อเนื่องเป็นครั้งที่......</span>
+                                    </div>
+
+                                    <div className="mb-2 font-semibold">กรณีการให้คำปรึกษา</div>
+                                    <div className="mb-4 grid grid-cols-4 gap-x-4 gap-y-1 text-[10px]">
+                                        <span>☐ การเรียน</span>
+                                        <span>☐ เพื่อน</span>
+                                        <span>☐ ครอบครัว</span>
+                                        <span>☐ สุขภาพ</span>
+                                        <span>☐ การศึกษาต่อ</span>
+                                        <span>☐ ความรัก</span>
+                                        <span>☐ เศรษฐกิจ</span>
+                                        <span></span>
+                                        <span>☐ อาชีพ/ทางงานพิเศษ</span>
+                                        <span>☐ อื่นๆ</span>
+                                    </div>
+
+                                    <div className="mb-1 font-semibold underline">ปัญหา/สาเหตุการขอรับการให้คำปรึกษา</div>
+                                    {[1, 2, 3].map(i => <div key={i} className="border-b border-gray-400 mb-2 h-5" />)}
+
+                                    <div className="mt-3 mb-1 font-semibold underline">การให้คำปรึกษา/แนะนำ/การช่วยเหลือ</div>
+                                    {[1, 2, 3].map(i => <div key={i} className="border-b border-gray-400 mb-2 h-5" />)}
+
+                                    <div className="mt-3 mb-1 font-semibold underline">ผลสรุปของการแก้ปัญหา</div>
+                                    {[1, 2].map(i => <div key={i} className="border-b border-gray-400 mb-2 h-5" />)}
+
+                                    <div className="mt-3 mb-1">วางแผน/การนัดหมายครั้งต่อไป วันที่...................................เวลา.........................</div>
+                                    <div className="mb-3">การติดตามผล</div>
+                                    {[1].map(i => <div key={i} className="border-b border-gray-400 mb-2 h-5" />)}
+
+                                    <div className="mt-3 mb-4">การส่งต่อ (ถ้ามี)</div>
+                                    {[1].map(i => <div key={i} className="border-b border-gray-400 mb-2 h-5" />)}
+
+                                    <div className="mt-6 flex justify-around items-end">
+                                        <div className="text-center">
+                                            <div className="flex items-end gap-1">
+                                                <span>ลงชื่อ..................................</span>
+                                                <span>ผู้รับคำปรึกษา ลงชื่อ..................................</span>
+                                                <span>ผู้ให้คำปรึกษา</span>
+                                            </div>
+                                            <div className="mt-1 flex justify-around">
+                                                <span>(.......................................)</span>
+                                                <span>(.......................................)</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="absolute bottom-4 left-0 right-0 text-center font-bold text-[13px]">"เรียนดี มีคุณธรรม"</div>
+                                </div>
+                            )}
+
+                            {/* ===== NEW: รายงานการให้คำปรึกษา (ตาราง) ===== */}
+                            {viewMode === "counseling-table" && (
+                                <div className="w-[210mm] shrink-0 border border-gray-300 p-10 pb-10 bg-white shadow-lg relative min-h-[297mm] text-[11px]">
+                                    <div className="text-center font-bold text-[12px] mb-1">รายงานการให้คำปรึกษานักเรียนนักศึกษา วิทยาลัยอาชีวศึกษาสุโขทัย</div>
+                                    <div className="text-center text-[11px] mb-1">แนวทางการดูแลช่วยเหลือผู้เรียน ภาคเรียนที่ {term} ปีการศึกษา {academicYear}</div>
+                                    <div className="text-[11px] mb-3">
+                                        ระดับชั้น {selectedAdvisor?.classLevel || ''} ห้อง {selectedAdvisor?.room || ''} สาขาวิชา {selectedAdvisor?.department || ''}
+                                    </div>
+
+                                    <table className="w-full border-collapse border border-black text-[10px]">
+                                        <thead>
+                                            <tr>
+                                                <th className="border border-black p-1 bg-gray-100 w-[6%] text-center">ลำดับ</th>
+                                                <th className="border border-black p-1 bg-gray-100 w-[25%] text-center">ผู้รับคำปรึกษา</th>
+                                                <th className="border border-black p-1 bg-gray-100 w-[35%] text-center">เรื่องที่ขอรับการปรึกษา</th>
+                                                <th className="border border-black p-1 bg-gray-100 w-[12%] text-center">แก้ปัญหาสำเร็จ</th>
+                                                <th className="border border-black p-1 bg-gray-100 w-[12%] text-center">มีการส่งต่อ</th>
+                                                <th className="border border-black p-1 bg-gray-100 w-[10%] text-center">หมายเหตุ</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {Array.from({ length: 12 }).map((_, i) => (
+                                                <tr key={i} className="h-8">
+                                                    <td className="border border-black p-1 text-center">{i + 1}</td>
+                                                    <td className="border border-black p-1"></td>
+                                                    <td className="border border-black p-1"></td>
+                                                    <td className="border border-black p-1 text-center"></td>
+                                                    <td className="border border-black p-1 text-center"></td>
+                                                    <td className="border border-black p-1"></td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+
+                                    <div className="mt-6 flex justify-around items-end">
+                                        <div className="text-center">
+                                            <div className="flex items-end gap-1">ลงชื่อ{dotLine("w-28")}ครูที่ปรึกษา</div>
+                                            <div className="mt-1">({selectedAdvisor.name})</div>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="flex items-end gap-1">ลงชื่อ{dotLine("w-28")}ครูที่ปรึกษา</div>
+                                            <div className="mt-1">(.......................................)</div>
+                                        </div>
+                                    </div>
+                                    <div className="absolute bottom-4 left-0 right-0 text-center font-bold text-[13px]">"เรียนดี มีคุณธรรม"</div>
+                                </div>
+                            )}
+
+                            {/* ===== NEW: การติดตามนักเรียน ===== */}
+                            {viewMode === "student-tracking" && (
+                                <div className="w-[210mm] shrink-0 border border-gray-300 p-10 pb-10 bg-white shadow-lg relative min-h-[297mm] text-[11px]">
+                                    <div className="text-center font-bold text-[12px] mb-3">การติดตามนักเรียน นักศึกษาที่ขาดเรียนบ่อย และนักเรียนที่ออกกลางคัน</div>
+
+                                    <table className="w-full border-collapse border border-black text-[10px] mb-4">
+                                        <thead>
+                                            <tr>
+                                                <th className="border border-black p-1 bg-gray-100 text-center w-[6%]" rowSpan={2}>ลำดับ</th>
+                                                <th className="border border-black p-1 bg-gray-100 text-center w-[30%]" rowSpan={2}>รายชื่อนักเรียน นักศึกษา</th>
+                                                <th className="border border-black p-1 bg-gray-100 text-center" colSpan={4}>สาเหตุออกกลางคัน</th>
+                                                <th className="border border-black p-1 bg-gray-100 text-center" colSpan={2}>การติดตาม</th>
+                                            </tr>
+                                            <tr>
+                                                <th className="border border-black p-1 bg-gray-100 text-center text-[9px]">ลาออก</th>
+                                                <th className="border border-black p-1 bg-gray-100 text-center text-[9px]">พักการเรียน</th>
+                                                <th className="border border-black p-1 bg-gray-100 text-center text-[9px]">พ้นสภาพ</th>
+                                                <th className="border border-black p-1 bg-gray-100 text-center text-[9px]">ไม่มาเรียน (มีรายชื่อ)</th>
+                                                <th className="border border-black p-1 bg-gray-100 text-center text-[9px]">โทรศัพท์/Line</th>
+                                                <th className="border border-black p-1 bg-gray-100 text-center text-[9px]">เยี่ยมบ้าน</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {Array.from({ length: 12 }).map((_, i) => (
+                                                <tr key={i} className="h-8">
+                                                    <td className="border border-black p-1 text-center">{i + 1}</td>
+                                                    <td className="border border-black p-1"></td>
+                                                    <td className="border border-black p-1"></td>
+                                                    <td className="border border-black p-1"></td>
+                                                    <td className="border border-black p-1"></td>
+                                                    <td className="border border-black p-1"></td>
+                                                    <td className="border border-black p-1"></td>
+                                                    <td className="border border-black p-1"></td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+
+                                    <div className="mb-2">การติดตาม สาเหตุที่ทำให้นักเรียนนักศึกษาออกกลางคัน.....................................................................................</div>
+                                    {fullLine()}
+                                    {fullLine()}
+
+                                    <div className="mt-6 flex justify-around items-end">
+                                        <div className="text-center">
+                                            <div className="flex items-end gap-1">ลงชื่อ{dotLine("w-28")}ครูที่ปรึกษา</div>
+                                            <div className="mt-1">({selectedAdvisor.name})</div>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="flex items-end gap-1">ลงชื่อ{dotLine("w-28")}ครูที่ปรึกษา</div>
+                                            <div className="mt-1">(.......................................)</div>
+                                        </div>
+                                    </div>
+                                    <div className="absolute bottom-4 left-0 right-0 text-center font-bold text-[13px]">"เรียนดี มีคุณธรรม"</div>
+                                </div>
+                            )}
+
+                            {/* ===== NEW: สรุปปัญหา/ข้อเสนอแนะ ===== */}
+                            {viewMode === "summary-form" && (
+                                <div className="w-[210mm] shrink-0 border border-gray-300 p-10 pb-10 bg-white shadow-lg relative min-h-[297mm] text-[11px]">
+                                    <div className="text-center font-bold text-[12px] mb-1">สรุปปัญหาของนักเรียน และข้อเสนอแนะในการจัดกิจกรรมโฮมรูม</div>
+                                    <div className="text-center text-[11px] mb-1">ภาคเรียนที่ {term} ปีการศึกษา {academicYear}</div>
+                                    <div className="text-center text-[11px] mb-1">ระดับชั้น {selectedAdvisor?.classLevel || ''} ห้อง {selectedAdvisor?.room || ''} สาขาวิชา {selectedAdvisor?.department || ''}</div>
+                                    <div className="text-center text-[11px] mb-4">วิทยาลัยอาชีวศึกษาสุโขทัย</div>
+
+                                    <div className="mb-3">
+                                        <div className="font-semibold mb-2">1. ปัญหาของนักเรียน ในการจัดกิจกรรม</div>
+                                        {[1, 2, 3, 4].map(i => <div key={i} className="border-b border-gray-400 mb-3 h-5" />)}
+                                    </div>
+
+                                    <div className="mb-3 mt-5">
+                                        <div className="font-semibold mb-2">2. แนวทางการแก้ไขปัญหาของครูที่ปรึกษา</div>
+                                        {[1, 2, 3, 4].map(i => <div key={i} className="border-b border-gray-400 mb-3 h-5" />)}
+                                    </div>
+
+                                    <div className="mb-3 mt-5">
+                                        <div className="font-semibold mb-2">3. ข้อเสนอแนะ</div>
+                                        {[1, 2, 3, 4, 5].map(i => <div key={i} className="border-b border-gray-400 mb-3 h-5" />)}
+                                    </div>
+
+                                    <div className="mt-8 grid grid-cols-2 gap-8">
+                                        <div className="text-center">
+                                            <div className="flex items-end justify-center gap-1 mb-1">ลงชื่อ{dotLine("w-24")}ครูที่ปรึกษา</div>
+                                            <div>({selectedAdvisor.name})</div>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="flex items-end justify-center gap-1 mb-1">ลงชื่อ{dotLine("w-24")}ครูที่ปรึกษา</div>
+                                            <div>(.......................................)</div>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="flex items-end justify-center gap-1 mb-1">ลงชื่อ{dotLine("w-24")}หัวหน้าแผนกวิชา</div>
+                                            <div>(.......................................)</div>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="flex items-end justify-center gap-1 mb-1">ลงชื่อ{dotLine("w-24")}หัวหน้างานครูที่ปรึกษา</div>
+                                            <div>(.......................................)</div>
+                                        </div>
+                                    </div>
+                                    <div className="absolute bottom-4 left-0 right-0 text-center font-bold text-[13px]">"เรียนดี มีคุณธรรม"</div>
+                                </div>
+                            )}
                         </>
                     )}
                 </div>
@@ -462,3 +631,4 @@ export default function FullReport() {
         </div>
     );
 }
+

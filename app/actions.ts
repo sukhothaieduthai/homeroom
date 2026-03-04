@@ -80,6 +80,21 @@ export async function getReportsAction(): Promise<HomeroomReport[]> {
     return sheetService.getReports();
 }
 
+export async function deleteReportsAction(ids: string[], pin: string) {
+    try {
+        const correctPin = process.env.ADMIN_DELETE_PIN;
+        if (!correctPin || pin !== correctPin) {
+            return { success: false, error: "รหัสผ่านไม่ถูกต้อง หรือยังไม่ได้ตั้งค่ารหัสผ่านในระบบ" };
+        }
+        await sheetService.connect();
+        await sheetService.deleteReports(ids);
+        return { success: true };
+    } catch (error) {
+        console.error("Failed to delete reports:", error);
+        return { success: false, error: "เกิดข้อผิดพลาดในการลบรายงาน" };
+    }
+}
+
 interface UploadMetadata {
     advisorName: string;
     term: string;

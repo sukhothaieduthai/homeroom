@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import puppeteer from 'puppeteer';
 
 export async function POST(req: NextRequest) {
@@ -361,7 +361,7 @@ export async function POST(req: NextRequest) {
                         </div>
 
                         <!-- Footer Motto -->
-                        <div style="text-align: center; margin-top: auto; padding-top: 24px; font-size: 16pt; font-weight: bold; color: #333;">
+                        <div style="position: absolute; bottom: 16px; left: 0; right: 0; text-align: center; font-size: 16pt; font-weight: bold; color: #333;">
                             “เรียนดี มีคุณธรรม”
                         </div>
                     </div>
@@ -370,54 +370,217 @@ export async function POST(req: NextRequest) {
             return html;
         };
 
-        const getSummaryHTML = () => `
-            <div class="page">
-                <div class="center table-title">สรุปราายงานการกิจกรรมโฮมรูม</div>
-                <div class="center table-subtitle">${term === 'All' ? 'ทุกภาคเรียนและทุกปีการศึกษา' : `ภาคเรียนที่ ${term} ปีการศึกษา ${academicYear || ''}`}</div>
-                <div class="center" style="font-size: 16pt; margin-bottom: 20px;">วิทยาลัยอาชีวศึกษาสุโขทัย</div>
+        // Helper utilities for form lines
+        const dotLine = (width = '130px') => `<div style="border-bottom: 1px dotted black; width: ${width}; display: inline-block; margin-bottom: 2px;"></div>`;
+        const fullLine = () => `<div style="border-bottom: 1px solid #aaa; width: 100%; margin-bottom: 8px; height: 16px;"></div>`;
+        const emptyRows = (n: number, cols: number) => Array.from({ length: n }).map((_, i) => `
+            <tr style="height: 28px;">
+                <td style="border: 1px solid black; padding: 2px; text-align: center; font-size: 10pt;">${i + 1}</td>
+                ${'<td style="border: 1px solid black; padding: 2px;"></td>'.repeat(cols - 1)}
+            </tr>`).join('');
 
-                <table>
+        // --- NEW FORM 1: แบบบันทึกให้คำปรึกษา (รายบุคคล) ---
+        const getCounselingFormHTML = () => `
+            <div class="page" style="font-size: 12pt;">
+                <div style="text-align: center; font-weight: bold; margin-bottom: 12px;">แบบบันทึกให้คำปรึกษานักเรียน นักศึกษา (รายบุคคล)</div>
+
+                <div style="text-align: right; margin-bottom: 8px;">วันที่............เดือน.......................พ.ศ........................</div>
+
+                <div style="margin-bottom: 6px;">เริ่มเวลา.........................................................................</div>
+                <div style="font-weight: bold; margin-bottom: 4px;">ผู้ขอรับการปรึกษา</div>
+                <div style="margin-bottom: 4px;">ชื่อ................................สกุล...................................ชื่อเล่น..........................</div>
+                <div style="margin-bottom: 12px;">ระดับชั้น..............ปีที่.........ห้อง..........เบอร์โทรศัพท์........................................</div>
+
+                <div style="font-weight: bold; margin-bottom: 4px;">การพิจารณารับคำปรึกษา</div>
+                <div style="margin-bottom: 4px; font-size: 11pt;">
+                    &#9744; สังเกตเห็นและเข้าไปช่วยเหลือเอง &nbsp;&nbsp; &#9744; ผู้รับการปรึกษามาด้วยตนเอง &nbsp;&nbsp; &#9744; ส่งต่อมาจาก..............
+                </div>
+                <div style="margin-bottom: 12px; font-size: 11pt;">
+                    &#9744; การพิจารณารับคำปรึกษาครั้งที่...... &nbsp;&nbsp; &#9744; เป็นครั้งแรก &nbsp;&nbsp; &#9744; ต่อเนื่องเป็นครั้งที่......
+                </div>
+
+                <div style="font-weight: bold; margin-bottom: 4px;">กรณีการให้คำปรึกษา</div>
+                <table style="width: 100%; font-size: 11pt; margin-bottom: 14px;">
+                    <tr>
+                        <td>&#9744; การเรียน</td>
+                        <td>&#9744; เพื่อน</td>
+                        <td>&#9744; ครอบครัว</td>
+                        <td>&#9744; สุขภาพ</td>
+                    </tr>
+                    <tr>
+                        <td>&#9744; การศึกษาต่อ</td>
+                        <td>&#9744; ความรัก</td>
+                        <td>&#9744; เศรษฐกิจ</td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td>&#9744; อาชีพ/ทางงานพิเศษ</td>
+                        <td>&#9744; อื่นๆ</td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </table>
+
+                <div style="font-weight: bold; text-decoration: underline; margin-bottom: 4px;">ปัญหา/สาเหตุการขอรับการให้คำปรึกษา</div>
+                ${fullLine()}${fullLine()}${fullLine()}
+
+                <div style="font-weight: bold; text-decoration: underline; margin-top: 10px; margin-bottom: 4px;">การให้คำปรึกษา/แนะนำ/การช่วยเหลือ</div>
+                ${fullLine()}${fullLine()}${fullLine()}
+
+                <div style="font-weight: bold; text-decoration: underline; margin-top: 10px; margin-bottom: 4px;">ผลสรุปของการแก้ปัญหา</div>
+                ${fullLine()}${fullLine()}
+
+                <div style="margin-top: 10px; margin-bottom: 4px;">วางแผน/การนัดหมายครั้งต่อไป วันที่...................................เวลา.........................</div>
+                <div style="margin-bottom: 6px;">การติดตามผล</div>
+                ${fullLine()}
+
+                <div style="margin-top: 10px; margin-bottom: 6px;">การส่งต่อ (ถ้ามี)</div>
+                ${fullLine()}
+
+                <div style="margin-top: 20px; text-align: center;">
+                    ลงชื่อ ${dotLine('120px')} ผู้รับคำปรึกษา &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ลงชื่อ ${dotLine('120px')} ผู้ให้คำปรึกษา<br/>
+                    <span style="margin-right: 140px; display: inline-block; margin-top: 6px;">(.......................................)</span>
+                    <span style="display: inline-block; margin-top: 6px;">(.......................................)</span>
+                </div>
+                <div style="position: absolute; bottom: 16px; left: 0; right: 0; text-align: center; font-weight: bold; font-size: 14pt;">"เรียนดี มีคุณธรรม"</div>
+            </div>
+        `;
+
+        // --- NEW FORM 2: รายงานการให้คำปรึกษา (ตาราง) ---
+        const getCounselingTableHTML = () => `
+            <div class="page">
+                <div style="text-align: center; font-weight: bold; font-size: 14pt; margin-bottom: 4px;">รายงานการให้คำปรึกษานักเรียนนักศึกษา วิทยาลัยอาชีวศึกษาสุโขทัย</div>
+                <div style="text-align: center; font-size: 12pt; margin-bottom: 4px;">แนวทางการดูแลช่วยเหลือผู้เรียน ภาคเรียนที่ ${term} ปีการศึกษา ${academicYear}</div>
+                <div style="font-size: 12pt; margin-bottom: 12px;">ระดับชั้น ${advisor?.classLevel || ''} ห้อง ${advisor?.room || ''} สาขาวิชา ${advisor?.department || ''}</div>
+
+                <table style="width: 100%; border-collapse: collapse; font-size: 11pt;">
                     <thead>
                         <tr>
-                            <th style="width: 12%">Date</th>
-                            <th style="width: 8%">Week</th>
-                            <th style="width: 20%">Advisor</th>
-                            <th style="width: 15%">Dept</th>
-                            <th style="width: 10%">Class</th>
-                            <th style="width: 20%">Topic</th>
-                            <th style="width: 10%">Stats</th>
-                            <th style="width: 5%">Pic</th>
+                            <th style="border: 1px solid black; padding: 4px; background: #f0f0f0; text-align: center; width: 6%;">ลำดับ</th>
+                            <th style="border: 1px solid black; padding: 4px; background: #f0f0f0; text-align: center; width: 25%;">ผู้รับคำปรึกษา</th>
+                            <th style="border: 1px solid black; padding: 4px; background: #f0f0f0; text-align: center; width: 35%;">เรื่องที่ขอรับการปรึกษา</th>
+                            <th style="border: 1px solid black; padding: 4px; background: #f0f0f0; text-align: center; width: 12%;">แก้ปัญหาสำเร็จ</th>
+                            <th style="border: 1px solid black; padding: 4px; background: #f0f0f0; text-align: center; width: 12%;">มีการส่งต่อ</th>
+                            <th style="border: 1px solid black; padding: 4px; background: #f0f0f0; text-align: center; width: 10%;">หมายเหตุ</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${reports.length > 0 ? reports.map((r: any) => `
-                            <tr>
-                                <td class="center" style="font-size: 12pt">${r.date}</td>
-                                <td class="center" style="font-size: 12pt">${r.week}</td>
-                                <td style="font-size: 12pt">${r.advisorName}</td>
-                                <td style="font-size: 12pt">${r.department}</td>
-                                <td class="center" style="font-size: 12pt">${r.classLevel} ${r.room}</td>
-                                <td style="font-size: 12pt">${r.topic}</td>
-                                <td class="center" style="font-size: 12pt">${r.presentStudents}/${r.totalStudents}</td>
-                                <td class="center" style="font-size: 12pt">${r.photoUrl ? 'Yes' : 'No'}</td>
-                            </tr>
-                        `).join('') : `
-                            <tr><td colspan="8" class="center">ไม่พบรายงาน</td></tr>
-                        `}
+                        ${emptyRows(14, 6)}
                     </tbody>
                 </table>
+
+                <div style="margin-top: 24px; display: flex; justify-content: space-around; text-align: center;">
+                    <div>
+                        <div>ลงชื่อ ${dotLine('120px')} ครูที่ปรึกษา</div>
+                        <div style="margin-top: 6px;">(${advisor.name})</div>
+                    </div>
+                    <div>
+                        <div>ลงชื่อ ${dotLine('120px')} ครูที่ปรึกษา</div>
+                        <div style="margin-top: 6px;">(.......................................)</div>
+                    </div>
+                </div>
+                <div style="position: absolute; bottom: 16px; left: 0; right: 0; text-align: center; font-weight: bold; font-size: 14pt;">"เรียนดี มีคุณธรรม"</div>
+            </div>
+        `;
+
+        // --- NEW FORM 3: การติดตามนักเรียน ---
+        const getStudentTrackingHTML = () => `
+            <div class="page">
+                <div style="text-align: center; font-weight: bold; font-size: 14pt; margin-bottom: 12px;">การติดตามนักเรียน นักศึกษาที่ขาดเรียนบ่อย และนักเรียนที่ออกกลางคัน</div>
+
+                <table style="width: 100%; border-collapse: collapse; font-size: 10pt;">
+                    <thead>
+                        <tr>
+                            <th style="border: 1px solid black; padding: 3px; background: #f0f0f0; text-align: center; width: 5%;" rowspan="2">ลำดับ</th>
+                            <th style="border: 1px solid black; padding: 3px; background: #f0f0f0; text-align: center; width: 22%;" rowspan="2">รายชื่อนักเรียน นักศึกษา</th>
+                            <th style="border: 1px solid black; padding: 3px; background: #f0f0f0; text-align: center;" colspan="4">สาเหตุออกกลางคัน</th>
+                            <th style="border: 1px solid black; padding: 3px; background: #f0f0f0; text-align: center;" colspan="2">การติดตาม</th>
+                        </tr>
+                        <tr>
+                            <th style="border: 1px solid black; padding: 2px; background: #f0f0f0; text-align: center; font-size: 9pt;">ลาออก</th>
+                            <th style="border: 1px solid black; padding: 2px; background: #f0f0f0; text-align: center; font-size: 9pt;">พักการเรียน</th>
+                            <th style="border: 1px solid black; padding: 2px; background: #f0f0f0; text-align: center; font-size: 9pt;">พ้นสภาพ</th>
+                            <th style="border: 1px solid black; padding: 2px; background: #f0f0f0; text-align: center; font-size: 9pt;">ไม่มาเรียน (มีรายชื่อ)</th>
+                            <th style="border: 1px solid black; padding: 2px; background: #f0f0f0; text-align: center; font-size: 9pt;">โทรศัพท์/Line</th>
+                            <th style="border: 1px solid black; padding: 2px; background: #f0f0f0; text-align: center; font-size: 9pt;">เยี่ยมบ้าน</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${emptyRows(13, 8)}
+                    </tbody>
+                </table>
+
+                <div style="margin-top: 8px; font-size: 11pt;">การติดตาม สาเหตุที่ทำให้นักเรียนนักศึกษาออกกลางคัน.....................................................................................</div>
+                ${fullLine()}${fullLine()}
+
+                <div style="margin-top: 24px; display: flex; justify-content: space-around; text-align: center;">
+                    <div>
+                        <div>ลงชื่อ ${dotLine('120px')} ครูที่ปรึกษา</div>
+                        <div style="margin-top: 6px;">(${advisor.name})</div>
+                    </div>
+                    <div>
+                        <div>ลงชื่อ ${dotLine('120px')} ครูที่ปรึกษา</div>
+                        <div style="margin-top: 6px;">(.......................................)</div>
+                    </div>
+                </div>
+                <div style="position: absolute; bottom: 16px; left: 0; right: 0; text-align: center; font-weight: bold; font-size: 14pt;">"เรียนดี มีคุณธรรม"</div>
+            </div>
+        `;
+
+        // --- NEW FORM 4: สรุปปัญหา/ข้อเสนอแนะ ---
+        const getSummaryFormHTML = () => `
+            <div class="page">
+                <div style="text-align: center; font-weight: bold; font-size: 14pt; margin-bottom: 4px;">สรุปปัญหาของนักเรียน และข้อเสนอแนะในการจัดกิจกรรมโฮมรูม</div>
+                <div style="text-align: center; font-size: 12pt; margin-bottom: 2px;">ภาคเรียนที่ ${term} ปีการศึกษา ${academicYear}</div>
+                <div style="text-align: center; font-size: 12pt; margin-bottom: 2px;">ระดับชั้น ${advisor?.classLevel || ''} ห้อง ${advisor?.room || ''} สาขาวิชา ${advisor?.department || ''}</div>
+                <div style="text-align: center; font-size: 12pt; margin-bottom: 14px;">วิทยาลัยอาชีวศึกษาสุโขทัย</div>
+
+                <div style="font-size: 12pt; font-weight: bold; margin-bottom: 6px;">1. ปัญหาของนักเรียน ในการจัดกิจกรรม</div>
+                ${fullLine()}${fullLine()}${fullLine()}${fullLine()}
+
+                <div style="font-size: 12pt; font-weight: bold; margin-top: 12px; margin-bottom: 6px;">2. แนวทางการแก้ไขปัญหาของครูที่ปรึกษา</div>
+                ${fullLine()}${fullLine()}${fullLine()}${fullLine()}
+
+                <div style="font-size: 12pt; font-weight: bold; margin-top: 12px; margin-bottom: 6px;">3. ข้อเสนอแนะ</div>
+                ${fullLine()}${fullLine()}${fullLine()}${fullLine()}${fullLine()}
+
+                <div style="margin-top: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: center;">
+                    <div>
+                        <div>ลงชื่อ ${dotLine('110px')} ครูที่ปรึกษา</div>
+                        <div style="margin-top: 6px;">(${advisor.name})</div>
+                    </div>
+                    <div>
+                        <div>ลงชื่อ ${dotLine('110px')} ครูที่ปรึกษา</div>
+                        <div style="margin-top: 6px;">(.......................................)</div>
+                    </div>
+                    <div style="margin-top: 12px;">
+                        <div>ลงชื่อ ${dotLine('110px')} หัวหน้าแผนกวิชา</div>
+                        <div style="margin-top: 6px;">(.......................................)</div>
+                    </div>
+                    <div style="margin-top: 12px;">
+                        <div>ลงชื่อ ${dotLine('110px')} หัวหน้างานครูที่ปรึกษา</div>
+                        <div style="margin-top: 6px;">(.......................................)</div>
+                    </div>
+                </div>
+                <div style="position: absolute; bottom: 16px; left: 0; right: 0; text-align: center; font-weight: bold; font-size: 14pt;">"เรียนดี มีคุณธรรม"</div>
             </div>
         `;
 
         // --- Assemble HTML ---
         let contentHTML = '';
 
-        if (mode === 'summary') {
-            contentHTML = getSummaryHTML();
-        } else {
-            if (mode === 'all' || mode === 'cover') contentHTML += getCoverHTML();
-            if (mode === 'all' || mode === 'table') contentHTML += getTableHTML();
-            if ((mode === 'all' || mode === 'photos') && photos && photos.length > 0) contentHTML += getPhotosHTML();
+        if (mode === 'cover') contentHTML = getCoverHTML();
+        else if (mode === 'table') contentHTML = getTableHTML();
+        else if (mode === 'photos' && photos && photos.length > 0) contentHTML = getPhotosHTML();
+        else if (mode === 'counseling-form') contentHTML = getCounselingFormHTML();
+        else if (mode === 'counseling-table') contentHTML = getCounselingTableHTML();
+        else if (mode === 'student-tracking') contentHTML = getStudentTrackingHTML();
+        else if (mode === 'summary-form') contentHTML = getSummaryFormHTML();
+        else {
+            // fallback: full report
+            contentHTML += getCoverHTML();
+            contentHTML += getTableHTML();
+            if (photos && photos.length > 0) contentHTML += getPhotosHTML();
         }
 
         const fullHTML = `
