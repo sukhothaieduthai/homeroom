@@ -34,7 +34,7 @@ export default function Navbar() {
     const pathname = usePathname();
 
     return (
-        <div className="max-w-5xl mx-auto space-y-6">
+        <div className="max-w-5xl mx-auto space-y-6 print:hidden">
             {/* Header Card */}
             <div className="bg-white rounded-xl shadow-sm p-6 text-center border-t-4 border-blue-400">
                 <h1 className="text-2xl font-bold text-blue-700">แบบบันทึกกิจกรรมโฮมรูม</h1>
