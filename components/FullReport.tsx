@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { HomeroomReport, Advisor } from "@/lib/google-sheets";
@@ -25,6 +25,62 @@ export default function FullReport() {
     const [reportPhotos, setReportPhotos] = useState<string[]>([]);
     const [reportRemarks, setReportRemarks] = useState("");
     const [isGenerating, setIsGenerating] = useState(false);
+
+    // ─── Interactive Form State (counseling-form, counseling-table, student-tracking) ───
+    // Page 2 — แบบบันทึกให้คำปรึกษา (รายบุคคล)
+    const [cfDate, setCfDate] = useState('');
+    const [cfMonth, setCfMonth] = useState('');
+    const [cfYear, setCfYear] = useState('');
+    const [cfStartTime, setCfStartTime] = useState('');
+    const [cfFname, setCfFname] = useState('');
+    const [cfLname, setCfLname] = useState('');
+    const [cfNickname, setCfNickname] = useState('');
+    const [cfLevel, setCfLevel] = useState('');
+    const [cfClassYear, setCfClassYear] = useState('');
+    const [cfRoom, setCfRoom] = useState('');
+    const [cfTel, setCfTel] = useState('');
+    const [cfObs, setCfObs] = useState(false);
+    const [cfSelf, setCfSelf] = useState(false);
+    const [cfReferred, setCfReferred] = useState(false);
+    const [cfReferFrom, setCfReferFrom] = useState('');
+    const [cfNthCheck, setCfNthCheck] = useState(false);
+    const [cfNthNum, setCfNthNum] = useState('');
+    const [cfFirst, setCfFirst] = useState(false);
+    const [cfCont1, setCfCont1] = useState(false);
+    const [cfCont1Num, setCfCont1Num] = useState('');
+    const [cfCont2, setCfCont2] = useState(false);
+    const [cfCont2Num, setCfCont2Num] = useState('');
+    const [cfCaseStudy, setCfCaseStudy] = useState(false);
+    const [cfCaseFriend, setCfCaseFriend] = useState(false);
+    const [cfCaseFamily, setCfCaseFamily] = useState(false);
+    const [cfCaseHealth, setCfCaseHealth] = useState(false);
+    const [cfCaseFurther, setCfCaseFurther] = useState(false);
+    const [cfCaseLove, setCfCaseLove] = useState(false);
+    const [cfCaseEconomy, setCfCaseEconomy] = useState(false);
+    const [cfCaseCareer, setCfCaseCareer] = useState(false);
+    const [cfCaseOther, setCfCaseOther] = useState(false);
+    const [cfProblem, setCfProblem] = useState('');
+    const [cfAdvice, setCfAdvice] = useState('');
+    const [cfResult, setCfResult] = useState('');
+    const [cfNextDate, setCfNextDate] = useState('');
+    const [cfNextTime, setCfNextTime] = useState('');
+    const [cfFollowup, setCfFollowup] = useState('');
+    const [cfReferNote, setCfReferNote] = useState('');
+    const [cfSig1, setCfSig1] = useState('');
+    const [cfSig2, setCfSig2] = useState('');
+    // Page 1 — รายงานการให้คำปรึกษา (ตาราง)
+    const [ctRows, setCtRows] = useState<{ name: string; topic: string; solved: boolean; referred: boolean; note: string }[]>(
+        Array.from({ length: 12 }, () => ({ name: '', topic: '', solved: false, referred: false, note: '' }))
+    );
+    const [ctSig1, setCtSig1] = useState('');
+    const [ctSig2, setCtSig2] = useState('');
+    // Page 3 — ติดตามนักเรียน
+    const [stRows, setStRows] = useState<{ name: string; resign: boolean; pause: boolean; expelled: boolean; absent: boolean; call: boolean; visit: boolean }[]>(
+        Array.from({ length: 12 }, () => ({ name: '', resign: false, pause: false, expelled: false, absent: false, call: false, visit: false }))
+    );
+    const [stNote, setStNote] = useState('');
+    const [stSig1, setStSig1] = useState('');
+    const [stSig2, setStSig2] = useState('');
 
     // View State
     const [viewMode, setViewMode] = useState<ViewMode>("cover");
@@ -78,6 +134,12 @@ export default function FullReport() {
 
     const handleExport = async () => {
         if (!selectedAdvisor) return alert("กรุณาเลือกครูที่ปรึกษา");
+
+        // For interactive fill-in forms: use the browser print dialog so filled data is captured
+        if (viewMode === 'counseling-form' || viewMode === 'counseling-table' || viewMode === 'student-tracking') {
+            window.print();
+            return;
+        }
 
         setIsGenerating(true);
         try {
@@ -159,6 +221,45 @@ export default function FullReport() {
 
     return (
         <div className="space-y-6">
+            <style>{`
+                .cf-inp {
+                    border: none;
+                    border-bottom: 1.5px solid #777;
+                    background: transparent;
+                    outline: none;
+                    font-family: inherit;
+                    font-size: max(16px, 0.68rem);
+                    min-height: 36px;
+                    padding: 2px 4px;
+                    color: inherit;
+                    display: inline-block;
+                    vertical-align: bottom;
+                    box-sizing: border-box;
+                }
+                .cf-inp:focus { border-bottom-color: #1a56db; background: rgba(26,86,219,0.04); border-radius: 2px; }
+                .cf-inp-block { display: block; width: 100%; }
+                .cf-ta {
+                    border: none;
+                    border-bottom: 1.5px solid #777;
+                    background: transparent;
+                    outline: none;
+                    font-family: inherit;
+                    font-size: max(16px, 0.68rem);
+                    padding: 2px 4px;
+                    color: inherit;
+                    width: 100%;
+                    display: block;
+                    resize: vertical;
+                    min-height: 56px;
+                    box-sizing: border-box;
+                }
+                .cf-ta:focus { border-bottom-color: #1a56db; }
+                .cf-cb { width: 15px; height: 15px; accent-color: #1a56db; cursor: pointer; flex-shrink: 0; vertical-align: middle; }
+                @media print {
+                    .cf-inp, .cf-ta { font-size: 10px !important; min-height: unset !important; border-bottom-color: #999 !important; background: transparent !important; }
+                    .cf-cb { width: 11px !important; height: 11px !important; }
+                }
+            `}</style>
             <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">ระบบพิมพ์รายงาน (Print)</h2>
 
             {/* Advisor Selector */}
@@ -401,75 +502,81 @@ export default function FullReport() {
                                 <div className="w-[210mm] shrink-0 border border-gray-300 p-10 pb-10 bg-white shadow-lg relative min-h-[297mm] text-[11px]">
                                     <div className="text-center font-bold text-[12px] mb-4">แบบบันทึกให้คำปรึกษานักเรียน นักศึกษา (รายบุคคล)</div>
 
-                                    <div className="flex justify-end mb-3">
-                                        <span>วันที่............เดือน.......................พ.ศ......................</span>
+                                    <div className="flex justify-end mb-3 items-end gap-1 flex-wrap">
+                                        <span>วันที่</span><input className="cf-inp" style={{width:'46px'}} value={cfDate} onChange={e=>setCfDate(e.target.value)} />
+                                        <span>เดือน</span><input className="cf-inp" style={{width:'90px'}} value={cfMonth} onChange={e=>setCfMonth(e.target.value)} />
+                                        <span>พ.ศ.</span><input className="cf-inp" style={{width:'58px'}} value={cfYear} onChange={e=>setCfYear(e.target.value)} />
+                                    </div>
+                                    <div className="mb-2 flex items-end gap-1">
+                                        <span>เริ่มเวลา</span><input className="cf-inp" style={{width:'150px'}} value={cfStartTime} onChange={e=>setCfStartTime(e.target.value)} />
                                     </div>
 
-                                    <div className="mb-2">
-                                        <span>เริ่มเวลา.........................................................................</span>
-                                    </div>
                                     <div className="font-semibold mb-1">ผู้ขอรับการปรึกษา</div>
-                                    <div className="mb-1 flex gap-4">
-                                        <span>ชื่อ................................สกุล...................................ชื่อเล่น..........................</span>
+                                    <div className="mb-1 flex items-end gap-1 flex-wrap">
+                                        <span>ชื่อ</span><input className="cf-inp" style={{width:'82px'}} value={cfFname} onChange={e=>setCfFname(e.target.value)} />
+                                        <span>สกุล</span><input className="cf-inp" style={{width:'82px'}} value={cfLname} onChange={e=>setCfLname(e.target.value)} />
+                                        <span>ชื่อเล่น</span><input className="cf-inp" style={{width:'68px'}} value={cfNickname} onChange={e=>setCfNickname(e.target.value)} />
                                     </div>
-                                    <div className="mb-3">
-                                        <span>ระดับชั้น..............ปีที่.........ห้อง..........เบอร์โทรศัพท์........................................</span>
+                                    <div className="mb-3 flex items-end gap-1 flex-wrap">
+                                        <span>ระดับชั้น</span><input className="cf-inp" style={{width:'48px'}} value={cfLevel} onChange={e=>setCfLevel(e.target.value)} />
+                                        <span>ปีที่</span><input className="cf-inp" style={{width:'26px'}} value={cfClassYear} onChange={e=>setCfClassYear(e.target.value)} />
+                                        <span>ห้อง</span><input className="cf-inp" style={{width:'26px'}} value={cfRoom} onChange={e=>setCfRoom(e.target.value)} />
+                                        <span>เบอร์โทรศัพท์</span><input className="cf-inp" style={{width:'100px'}} value={cfTel} onChange={e=>setCfTel(e.target.value)} />
                                     </div>
 
                                     <div className="mb-2 font-semibold">การพิจารณารับคำปรึกษา</div>
-                                    <div className="mb-3 flex flex-wrap gap-x-6 gap-y-1 text-[10px]">
-                                        <span>☐ สังเกตเห็นและเข้าไปช่วยเหลือเอง</span>
-                                        <span>☐ ผู้รับการปรึกษามาด้วยตนเอง</span>
-                                        <span>☐ ส่งต่อมาจาก..............</span>
+                                    <div className="mb-3 flex flex-wrap gap-x-6 gap-y-2 text-[10px]">
+                                        <label className="flex items-center gap-1 cursor-pointer"><input type="checkbox" className="cf-cb" checked={cfObs} onChange={e=>setCfObs(e.target.checked)} /><span>สังเกตเห็นและเข้าไปช่วยเหลือเอง</span></label>
+                                        <label className="flex items-center gap-1 cursor-pointer"><input type="checkbox" className="cf-cb" checked={cfSelf} onChange={e=>setCfSelf(e.target.checked)} /><span>ผู้รับการปรึกษามาด้วยตนเอง</span></label>
+                                        <label className="flex items-center gap-1 cursor-pointer"><input type="checkbox" className="cf-cb" checked={cfReferred} onChange={e=>setCfReferred(e.target.checked)} /><span>ส่งต่อมาจาก</span><input className="cf-inp" style={{width:'76px',minHeight:'24px'}} value={cfReferFrom} onChange={e=>setCfReferFrom(e.target.value)} /></label>
                                     </div>
-                                    <div className="mb-3 flex flex-wrap gap-x-6 gap-y-1 text-[10px]">
-                                        <span>☐ การพิจารณารับคำปรึกษาครั้งที่......</span>
-                                        <span>☐ เป็นครั้งแรก</span>
-                                        <span>☐ ต่อเนื่องเป็นครั้งที่......</span>
-                                        <span>☐ ต่อเนื่องเป็นครั้งที่......</span>
+                                    <div className="mb-3 flex flex-wrap gap-x-6 gap-y-2 text-[10px]">
+                                        <label className="flex items-center gap-1 cursor-pointer"><input type="checkbox" className="cf-cb" checked={cfNthCheck} onChange={e=>setCfNthCheck(e.target.checked)} /><span>การพิจารณารับคำปรึกษาครั้งที่</span><input className="cf-inp" style={{width:'36px',minHeight:'24px'}} value={cfNthNum} onChange={e=>setCfNthNum(e.target.value)} /></label>
+                                        <label className="flex items-center gap-1 cursor-pointer"><input type="checkbox" className="cf-cb" checked={cfFirst} onChange={e=>setCfFirst(e.target.checked)} /><span>เป็นครั้งแรก</span></label>
+                                        <label className="flex items-center gap-1 cursor-pointer"><input type="checkbox" className="cf-cb" checked={cfCont1} onChange={e=>setCfCont1(e.target.checked)} /><span>ต่อเนื่องเป็นครั้งที่</span><input className="cf-inp" style={{width:'36px',minHeight:'24px'}} value={cfCont1Num} onChange={e=>setCfCont1Num(e.target.value)} /></label>
+                                        <label className="flex items-center gap-1 cursor-pointer"><input type="checkbox" className="cf-cb" checked={cfCont2} onChange={e=>setCfCont2(e.target.checked)} /><span>ต่อเนื่องเป็นครั้งที่</span><input className="cf-inp" style={{width:'36px',minHeight:'24px'}} value={cfCont2Num} onChange={e=>setCfCont2Num(e.target.value)} /></label>
                                     </div>
 
                                     <div className="mb-2 font-semibold">กรณีการให้คำปรึกษา</div>
-                                    <div className="mb-4 grid grid-cols-4 gap-x-4 gap-y-1 text-[10px]">
-                                        <span>☐ การเรียน</span>
-                                        <span>☐ เพื่อน</span>
-                                        <span>☐ ครอบครัว</span>
-                                        <span>☐ สุขภาพ</span>
-                                        <span>☐ การศึกษาต่อ</span>
-                                        <span>☐ ความรัก</span>
-                                        <span>☐ เศรษฐกิจ</span>
+                                    <div className="mb-4 grid grid-cols-4 gap-x-4 gap-y-2 text-[10px]">
+                                        <label className="flex items-center gap-1 cursor-pointer"><input type="checkbox" className="cf-cb" checked={cfCaseStudy} onChange={e=>setCfCaseStudy(e.target.checked)} /><span>การเรียน</span></label>
+                                        <label className="flex items-center gap-1 cursor-pointer"><input type="checkbox" className="cf-cb" checked={cfCaseFriend} onChange={e=>setCfCaseFriend(e.target.checked)} /><span>เพื่อน</span></label>
+                                        <label className="flex items-center gap-1 cursor-pointer"><input type="checkbox" className="cf-cb" checked={cfCaseFamily} onChange={e=>setCfCaseFamily(e.target.checked)} /><span>ครอบครัว</span></label>
+                                        <label className="flex items-center gap-1 cursor-pointer"><input type="checkbox" className="cf-cb" checked={cfCaseHealth} onChange={e=>setCfCaseHealth(e.target.checked)} /><span>สุขภาพ</span></label>
+                                        <label className="flex items-center gap-1 cursor-pointer"><input type="checkbox" className="cf-cb" checked={cfCaseFurther} onChange={e=>setCfCaseFurther(e.target.checked)} /><span>การศึกษาต่อ</span></label>
+                                        <label className="flex items-center gap-1 cursor-pointer"><input type="checkbox" className="cf-cb" checked={cfCaseLove} onChange={e=>setCfCaseLove(e.target.checked)} /><span>ความรัก</span></label>
+                                        <label className="flex items-center gap-1 cursor-pointer"><input type="checkbox" className="cf-cb" checked={cfCaseEconomy} onChange={e=>setCfCaseEconomy(e.target.checked)} /><span>เศรษฐกิจ</span></label>
                                         <span></span>
-                                        <span>☐ อาชีพ/ทางงานพิเศษ</span>
-                                        <span>☐ อื่นๆ</span>
+                                        <label className="flex items-center gap-1 cursor-pointer"><input type="checkbox" className="cf-cb" checked={cfCaseCareer} onChange={e=>setCfCaseCareer(e.target.checked)} /><span>อาชีพ/ทางงานพิเศษ</span></label>
+                                        <label className="flex items-center gap-1 cursor-pointer"><input type="checkbox" className="cf-cb" checked={cfCaseOther} onChange={e=>setCfCaseOther(e.target.checked)} /><span>อื่นๆ</span></label>
                                     </div>
 
                                     <div className="mb-1 font-semibold underline">ปัญหา/สาเหตุการขอรับการให้คำปรึกษา</div>
-                                    {[1, 2, 3].map(i => <div key={i} className="border-b border-gray-400 mb-2 h-5" />)}
+                                    <textarea className="cf-ta" rows={3} value={cfProblem} onChange={e=>setCfProblem(e.target.value)} />
 
                                     <div className="mt-3 mb-1 font-semibold underline">การให้คำปรึกษา/แนะนำ/การช่วยเหลือ</div>
-                                    {[1, 2, 3].map(i => <div key={i} className="border-b border-gray-400 mb-2 h-5" />)}
+                                    <textarea className="cf-ta" rows={3} value={cfAdvice} onChange={e=>setCfAdvice(e.target.value)} />
 
                                     <div className="mt-3 mb-1 font-semibold underline">ผลสรุปของการแก้ปัญหา</div>
-                                    {[1, 2].map(i => <div key={i} className="border-b border-gray-400 mb-2 h-5" />)}
+                                    <textarea className="cf-ta" rows={2} value={cfResult} onChange={e=>setCfResult(e.target.value)} />
 
-                                    <div className="mt-3 mb-1">วางแผน/การนัดหมายครั้งต่อไป วันที่...................................เวลา.........................</div>
-                                    <div className="mb-3">การติดตามผล</div>
-                                    {[1].map(i => <div key={i} className="border-b border-gray-400 mb-2 h-5" />)}
-
-                                    <div className="mt-3 mb-4">การส่งต่อ (ถ้ามี)</div>
-                                    {[1].map(i => <div key={i} className="border-b border-gray-400 mb-2 h-5" />)}
+                                    <div className="mt-3 mb-1 flex items-end gap-1 flex-wrap">
+                                        <span>วางแผน/การนัดหมายครั้งต่อไป วันที่</span><input className="cf-inp" style={{width:'96px'}} value={cfNextDate} onChange={e=>setCfNextDate(e.target.value)} />
+                                        <span>เวลา</span><input className="cf-inp" style={{width:'76px'}} value={cfNextTime} onChange={e=>setCfNextTime(e.target.value)} />
+                                    </div>
+                                    <div className="mb-1">การติดตามผล</div>
+                                    <textarea className="cf-ta" rows={1} style={{minHeight:'36px'}} value={cfFollowup} onChange={e=>setCfFollowup(e.target.value)} />
+                                    <div className="mt-3 mb-1">การส่งต่อ (ถ้ามี)</div>
+                                    <textarea className="cf-ta" rows={1} style={{minHeight:'36px'}} value={cfReferNote} onChange={e=>setCfReferNote(e.target.value)} />
 
                                     <div className="mt-6 flex justify-around items-end">
                                         <div className="text-center">
-                                            <div className="flex items-end gap-1">
-                                                <span>ลงชื่อ..................................</span>
-                                                <span>ผู้รับคำปรึกษา ลงชื่อ..................................</span>
-                                                <span>ผู้ให้คำปรึกษา</span>
-                                            </div>
-                                            <div className="mt-1 flex justify-around">
-                                                <span>(.......................................)</span>
-                                                <span>(.......................................)</span>
-                                            </div>
+                                            <div className="flex items-end gap-1"><span>ลงชื่อ</span><input className="cf-inp" style={{width:'108px'}} value={cfSig1} onChange={e=>setCfSig1(e.target.value)} /><span>ผู้รับคำปรึกษา</span></div>
+                                            <div className="mt-1">({cfSig1 || '......................................'})</div>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="flex items-end gap-1"><span>ลงชื่อ</span><input className="cf-inp" style={{width:'108px'}} value={cfSig2} onChange={e=>setCfSig2(e.target.value)} /><span>ผู้ให้คำปรึกษา</span></div>
+                                            <div className="mt-1">({cfSig2 || '......................................'})</div>
                                         </div>
                                     </div>
                                     <div className="absolute bottom-4 left-0 right-0 text-center font-bold text-[13px]">"เรียนดี มีคุณธรรม"</div>
@@ -497,14 +604,14 @@ export default function FullReport() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {Array.from({ length: 12 }).map((_, i) => (
+                                            {ctRows.map((row, i) => (
                                                 <tr key={i} className="h-8">
                                                     <td className="border border-black p-1 text-center">{i + 1}</td>
-                                                    <td className="border border-black p-1"></td>
-                                                    <td className="border border-black p-1"></td>
-                                                    <td className="border border-black p-1 text-center"></td>
-                                                    <td className="border border-black p-1 text-center"></td>
-                                                    <td className="border border-black p-1"></td>
+                                                    <td className="border border-black p-0.5"><input className="cf-inp cf-inp-block" style={{minHeight:'28px'}} value={row.name} onChange={e => setCtRows(rows => rows.map((r, idx) => idx === i ? {...r, name: e.target.value} : r))} /></td>
+                                                    <td className="border border-black p-0.5"><input className="cf-inp cf-inp-block" style={{minHeight:'28px'}} value={row.topic} onChange={e => setCtRows(rows => rows.map((r, idx) => idx === i ? {...r, topic: e.target.value} : r))} /></td>
+                                                    <td className="border border-black p-1 text-center"><input type="checkbox" className="cf-cb" checked={row.solved} onChange={e => setCtRows(rows => rows.map((r, idx) => idx === i ? {...r, solved: e.target.checked} : r))} /></td>
+                                                    <td className="border border-black p-1 text-center"><input type="checkbox" className="cf-cb" checked={row.referred} onChange={e => setCtRows(rows => rows.map((r, idx) => idx === i ? {...r, referred: e.target.checked} : r))} /></td>
+                                                    <td className="border border-black p-0.5"><input className="cf-inp cf-inp-block" style={{minHeight:'28px'}} value={row.note} onChange={e => setCtRows(rows => rows.map((r, idx) => idx === i ? {...r, note: e.target.value} : r))} /></td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -512,12 +619,12 @@ export default function FullReport() {
 
                                     <div className="mt-6 flex justify-around items-end">
                                         <div className="text-center">
-                                            <div className="flex items-end gap-1">ลงชื่อ{dotLine("w-28")}ครูที่ปรึกษา</div>
-                                            <div className="mt-1">({selectedAdvisor.name})</div>
+                                            <div className="flex items-end gap-1">ลงชื่อ<input className="cf-inp" style={{width:'100px'}} value={ctSig1} onChange={e=>setCtSig1(e.target.value)} />ครูที่ปรึกษา</div>
+                                            <div className="mt-1">({ctSig1 || selectedAdvisor.name})</div>
                                         </div>
                                         <div className="text-center">
-                                            <div className="flex items-end gap-1">ลงชื่อ{dotLine("w-28")}ครูที่ปรึกษา</div>
-                                            <div className="mt-1">(.......................................)</div>
+                                            <div className="flex items-end gap-1">ลงชื่อ<input className="cf-inp" style={{width:'100px'}} value={ctSig2} onChange={e=>setCtSig2(e.target.value)} />ครูที่ปรึกษา</div>
+                                            <div className="mt-1">({ctSig2 || '.......................................'})</div>
                                         </div>
                                     </div>
                                     <div className="absolute bottom-4 left-0 right-0 text-center font-bold text-[13px]">"เรียนดี มีคุณธรรม"</div>
@@ -547,33 +654,36 @@ export default function FullReport() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {Array.from({ length: 12 }).map((_, i) => (
+                                            {stRows.map((row, i) => (
                                                 <tr key={i} className="h-8">
                                                     <td className="border border-black p-1 text-center">{i + 1}</td>
-                                                    <td className="border border-black p-1"></td>
-                                                    <td className="border border-black p-1"></td>
-                                                    <td className="border border-black p-1"></td>
-                                                    <td className="border border-black p-1"></td>
-                                                    <td className="border border-black p-1"></td>
-                                                    <td className="border border-black p-1"></td>
-                                                    <td className="border border-black p-1"></td>
+                                                    <td className="border border-black p-0.5"><input className="cf-inp cf-inp-block" style={{minHeight:'28px'}} value={row.name} onChange={e => setStRows(rows => rows.map((r, idx) => idx === i ? {...r, name: e.target.value} : r))} /></td>
+                                                    <td className="border border-black p-1 text-center"><input type="checkbox" className="cf-cb" checked={row.resign} onChange={e => setStRows(rows => rows.map((r, idx) => idx === i ? {...r, resign: e.target.checked} : r))} /></td>
+                                                    <td className="border border-black p-1 text-center"><input type="checkbox" className="cf-cb" checked={row.pause} onChange={e => setStRows(rows => rows.map((r, idx) => idx === i ? {...r, pause: e.target.checked} : r))} /></td>
+                                                    <td className="border border-black p-1 text-center"><input type="checkbox" className="cf-cb" checked={row.expelled} onChange={e => setStRows(rows => rows.map((r, idx) => idx === i ? {...r, expelled: e.target.checked} : r))} /></td>
+                                                    <td className="border border-black p-1 text-center"><input type="checkbox" className="cf-cb" checked={row.absent} onChange={e => setStRows(rows => rows.map((r, idx) => idx === i ? {...r, absent: e.target.checked} : r))} /></td>
+                                                    <td className="border border-black p-1 text-center"><input type="checkbox" className="cf-cb" checked={row.call} onChange={e => setStRows(rows => rows.map((r, idx) => idx === i ? {...r, call: e.target.checked} : r))} /></td>
+                                                    <td className="border border-black p-1 text-center"><input type="checkbox" className="cf-cb" checked={row.visit} onChange={e => setStRows(rows => rows.map((r, idx) => idx === i ? {...r, visit: e.target.checked} : r))} /></td>
                                                 </tr>
                                             ))}
                                         </tbody>
                                     </table>
 
-                                    <div className="mb-2">การติดตาม สาเหตุที่ทำให้นักเรียนนักศึกษาออกกลางคัน.....................................................................................</div>
+                                    <div className="mb-2 flex items-end gap-1">
+                                        <span>การติดตาม สาเหตุที่ทำให้นักเรียนนักศึกษาออกกลางคัน</span>
+                                        <input className="cf-inp" style={{flex:1, minWidth:'80px'}} value={stNote} onChange={e=>setStNote(e.target.value)} />
+                                    </div>
                                     {fullLine()}
                                     {fullLine()}
 
                                     <div className="mt-6 flex justify-around items-end">
                                         <div className="text-center">
-                                            <div className="flex items-end gap-1">ลงชื่อ{dotLine("w-28")}ครูที่ปรึกษา</div>
-                                            <div className="mt-1">({selectedAdvisor.name})</div>
+                                            <div className="flex items-end gap-1">ลงชื่อ<input className="cf-inp" style={{width:'100px'}} value={stSig1} onChange={e=>setStSig1(e.target.value)} />ครูที่ปรึกษา</div>
+                                            <div className="mt-1">({stSig1 || selectedAdvisor.name})</div>
                                         </div>
                                         <div className="text-center">
-                                            <div className="flex items-end gap-1">ลงชื่อ{dotLine("w-28")}ครูที่ปรึกษา</div>
-                                            <div className="mt-1">(.......................................)</div>
+                                            <div className="flex items-end gap-1">ลงชื่อ<input className="cf-inp" style={{width:'100px'}} value={stSig2} onChange={e=>setStSig2(e.target.value)} />ครูที่ปรึกษา</div>
+                                            <div className="mt-1">({stSig2 || '.......................................'})</div>
                                         </div>
                                     </div>
                                     <div className="absolute bottom-4 left-0 right-0 text-center font-bold text-[13px]">"เรียนดี มีคุณธรรม"</div>
