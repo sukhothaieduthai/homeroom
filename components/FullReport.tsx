@@ -256,14 +256,16 @@ export default function FullReport() {
                 .cf-ta:focus { border-bottom-color: #1a56db; }
                 .cf-cb { width: 15px; height: 15px; accent-color: #1a56db; cursor: pointer; flex-shrink: 0; vertical-align: middle; }
                 @media print {
+                    @page { margin: 0; size: A4; }
+                    body { margin: 0 !important; padding: 0 !important; background: white !important; }
                     .cf-inp, .cf-ta { font-size: 10px !important; min-height: unset !important; border-bottom-color: #999 !important; background: transparent !important; }
                     .cf-cb { width: 11px !important; height: 11px !important; }
                 }
             `}</style>
-            <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">ระบบพิมพ์รายงาน (Print)</h2>
+            <h2 className="text-xl font-semibold text-gray-800 border-b pb-2 print:hidden">ระบบพิมพ์รายงาน (Print)</h2>
 
             {/* Advisor Selector */}
-            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm print:hidden">
                 <AdvisorSelector year={Number(academicYear)} onAdvisorSelect={handleAdvisorSelect} />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
                     <div className="flex flex-col gap-2">
@@ -293,7 +295,7 @@ export default function FullReport() {
 
             {/* Remarks for Table mode */}
             {selectedAdvisor && viewMode === 'table' && (
-                <div className="bg-white p-4 rounded-lg border border-gray-200 flex flex-col gap-2 shadow-sm">
+                <div className="bg-white p-4 rounded-lg border border-gray-200 flex flex-col gap-2 shadow-sm print:hidden">
                     <label className="text-sm font-medium text-gray-700">หมายเหตุ (แสดงท้ายตารางรายงาน)</label>
                     <textarea
                         value={reportRemarks}
@@ -306,7 +308,7 @@ export default function FullReport() {
 
             {/* Download Button */}
             {selectedAdvisor && (
-                <div className="flex justify-end">
+                <div className="flex justify-end print:hidden">
                     <button
                         onClick={handleExport}
                         disabled={isGenerating || (viewMode !== 'counseling-form' && viewMode !== 'counseling-table' && viewMode !== 'student-tracking' && viewMode !== 'summary-form' && filteredReports.length === 0)}
@@ -319,7 +321,7 @@ export default function FullReport() {
             )}
 
             {/* View Mode Tabs */}
-            <div className="flex gap-2 w-full overflow-x-auto pb-2">
+            <div className="flex gap-2 w-full overflow-x-auto pb-2 print:hidden">
                 {tabButtons.map(({ mode, icon, label }) => (
                     <button
                         key={mode}
@@ -335,7 +337,7 @@ export default function FullReport() {
             </div>
 
             {/* View Content */}
-            <div className="bg-white border text-gray-900 border-gray-200 shadow-sm rounded-lg min-h-[500px] p-4 sm:p-8 bg-gray-50 overflow-auto">
+            <div className="bg-white border text-gray-900 border-gray-200 shadow-sm rounded-lg min-h-[500px] p-4 sm:p-8 bg-gray-50 overflow-auto print:border-none print:shadow-none print:p-0 print:bg-transparent print:min-h-0 print:overflow-visible">
                 <div className="w-max mx-auto flex flex-col gap-8">
                     {!selectedAdvisor ? (
                         <div className="text-gray-400 flex flex-col items-center justify-center h-64 w-[210mm] shrink-0 border border-gray-200 bg-white shadow-lg mx-auto">
