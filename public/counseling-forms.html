@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>แบบฟอร์มให้คำปรึกษา – วิทยาลัยอาชีวศึกษาสุโขทัย</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ===========================
+       BASE & TYPOGRAPHY
+    =========================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #1a56db;
+      --primary-dark: #1e429f;
+      --accent: #f59e0b;
+      --bg: #f3f4f6;
+      --card: #ffffff;
+      --border: #000000;
+      --text: #111827;
+      --muted: #6b7280;
+      --tab-active: #1a56db;
+      --tab-inactive: #e5e7eb;
+      --radius: 10px;
+      --input-min-h: 44px;
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ===========================
+       HEADER
+    =========================== */
+    header {
+      background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
+      color: #fff;
+      padding: 16px 20px 12px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+    }
+    header h1 {
+      font-size: clamp(1rem, 4vw, 1.25rem);
+      font-weight: 700;
+      line-height: 1.4;
+    }
+    header p {
+      font-size: 0.85rem;
+      opacity: .85;
+      margin-top: 2px;
+    }
+
+    /* ===========================
+       TAB NAVIGATION
+    =========================== */
+    .tab-nav {
+      display: flex;
+      overflow-x: auto;
+      background: #1e3a8a;
+      padding: 8px 12px 0;
+      gap: 4px;
+      scrollbar-width: none;
+    }
+    .tab-nav::-webkit-scrollbar { display: none; }
+
+    .tab-btn {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 16px;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.7);
+      background: transparent;
+      border: none;
+      border-radius: 8px 8px 0 0;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+      min-height: 44px;
+    }
+    .tab-btn.active {
+      background: var(--card);
+      color: var(--primary);
+    }
+    .tab-btn:not(.active):hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+
+    /* ===========================
+       MAIN CONTENT
+    =========================== */
+    .main-wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px 12px 100px;
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ===========================
+       FORM CARD
+    =========================== */
+    .form-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+      padding: 20px 18px;
+      margin-bottom: 16px;
+    }
+
+    /* ===========================
+       SECTION LABELS & INPUTS
+    =========================== */
+    .section-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--primary-dark);
+      border-left: 4px solid var(--primary);
+      padding-left: 10px;
+      margin-bottom: 12px;
+    }
+
+    .doc-title {
+      text-align: center;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .doc-subtitle {
+      text-align: center;
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    label.field-label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    input[type="tel"],
+    input[type="time"],
+    select,
+    textarea {
+      width: 100%;
+      min-height: var(--input-min-h);
+      padding: 10px 12px;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 1rem; /* ≥16px prevents iOS zoom */
+      border: 1.5px solid #d1d5db;
+      border-radius: 8px;
+      background: #f9fafb;
+      color: var(--text);
+      transition: border-color 0.2s, box-shadow 0.2s;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(26,86,219,0.15);
+      background: #fff;
+    }
+    textarea { min-height: 80px; resize: vertical; }
+    select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%236b7280' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+
+    .field-row {
+      display: grid;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .field-row.cols-2 { grid-template-columns: 1fr 1fr; }
+    .field-row.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .field-row.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+    @media (max-width: 560px) {
+      .field-row.cols-2, .field-row.cols-3, .field-row.cols-4 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .field-group { display: flex; flex-direction: column; gap: 4px; }
+
+    /* ===========================
+       CHECKBOX GROUP
+    =========================== */
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 20px;
+      margin-bottom: 14px;
+    }
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 44px;
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+    .checkbox-item input[type="checkbox"],
+    .checkbox-item input[type="radio"] {
+      width: 20px;
+      height: 20px;
+      min-height: unset;
+      padding: 0;
+      accent-color: var(--primary);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    /* ===========================
+       DIVIDER
+    =========================== */
+    .divider {
+      height: 1px;
+      background: #e5e7eb;
+      margin: 16px 0;
+    }
+
+    /* ===========================
+       TABLE STYLES
+    =========================== */
+    .form-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table.form-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      min-width: 500px;
+    }
+    table.form-table th {
+      background: #eff6ff;
+      color: var(--primary-dark);
+      font-weight: 700;
+      padding: 10px 8px;
+      border: 1.5px solid #93c5fd;
+      text-align: center;
+      line-height: 1.3;
+    }
+    table.form-table td {
+      border: 1px solid #d1d5db;
+      padding: 4px 6px;
+      vertical-align: middle;
+    }
+    table.form-table td input[type="text"],
+    table.form-table td select,
+    table.form-table td textarea,
+    table.form-table td input[type="checkbox"] {
+      border: none;
+      background: transparent;
+      min-height: 36px;
+      padding: 4px 6px;
+      border-radius: 0;
+      font-size: 0.9rem;
+    }
+    table.form-table td input[type="text"]:focus,
+    table.form-table td textarea:focus {
+      background: #eff6ff;
+      border-radius: 4px;
+      box-shadow: none;
+    }
+    table.form-table td.center { text-align: center; }
+    table.form-table td input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      min-height: unset;
+      accent-color: var(--primary);
+      padding: 0;
+    }
+    table.form-table td textarea {
+      min-height: 50px;
+      width: 100%;
+    }
+    .row-num { text-align: center; color: var(--muted); font-size: 0.8rem; }
+
+    /* ===========================
+       SIGNATURE SECTION
+    =========================== */
+    .sig-row {
+      display: grid;
+      gap: 16px;
+      margin-top: 20px;
+    }
+    .sig-row.cols-2 { grid-template-columns: 1fr 1fr; }
+    .sig-row.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+    @media (max-width: 560px) {
+      .sig-row.cols-2, .sig-row.cols-4 { grid-template-columns: 1fr 1fr; }
+    }
+
+    .sig-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .sig-box .sig-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-align: center;
+    }
+    .sig-canvas-wrap {
+      width: 100%;
+      border: 1.5px dashed #9ca3af;
+      border-radius: 8px;
+      background: #fafafa;
+      overflow: hidden;
+      cursor: crosshair;
+    }
+    .sig-canvas-wrap canvas {
+      display: block;
+      width: 100%;
+      height: 80px;
+    }
+    .sig-name {
+      width: 100%;
+      text-align: center;
+    }
+    .sig-name input {
+      min-height: 36px;
+      font-size: 0.95rem;
+      text-align: center;
+    }
+    .sig-clear-btn {
+      font-size: 0.7rem;
+      color: #ef4444;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 2px 6px;
+      font-family: 'Sarabun', sans-serif;
+    }
+
+    /* ===========================
+       PRINT BUTTON
+    =========================== */
+    .print-bar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: rgba(255,255,255,0.97);
+      border-top: 1px solid #e5e7eb;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      z-index: 1000;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    }
+    .print-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 28px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      min-height: 48px;
+      box-shadow: 0 4px 12px rgba(26,86,219,0.35);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .print-btn:active {
+      transform: scale(0.97);
+      box-shadow: 0 2px 6px rgba(26,86,219,0.25);
+    }
+    .clear-all-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 12px 18px;
+      background: #fff;
+      color: #ef4444;
+      border: 1.5px solid #ef4444;
+      border-radius: 10px;
+      font-family: 'Sarabun', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      min-height: 48px;
+      transition: background 0.15s;
+    }
+    .clear-all-btn:active { background: #fef2f2; }
+
+    /* ===========================
+       PRINT MEDIA QUERY
+    =========================== */
+    @media print {
+      @page { size: A4 portrait; margin: 15mm 15mm 15mm 15mm; }
+      body { background: #fff !important; }
+      header, .tab-nav, .print-bar, .sig-clear-btn, .clear-all-btn, .no-print { display: none !important; }
+      .main-wrap { padding: 0; max-width: 100%; }
+      .tab-panel { display: none !important; }
+      .tab-panel.active { display: block !important; }
+      .form-card {
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+        margin-bottom: 8px !important;
+        border-radius: 0 !important;
+        page-break-inside: avoid;
+      }
+      .form-table-wrap { overflow-x: visible; }
+      table.form-table { min-width: unset; }
+      table.form-table td input[type="text"],
+      table.form-table td textarea {
+        font-size: 9pt;
+      }
+      input, textarea, select {
+        border: none !important;
+        border-bottom: 1px solid #000 !important;
+        background: transparent !important;
+        border-radius: 0 !important;
+        padding: 2px 4px !important;
+        min-height: unset !important;
+        box-shadow: none !important;
+        font-size: 10pt !important;
+      }
+      .sig-canvas-wrap { border: none !important; border-bottom: 1px solid #000 !important; border-radius: 0 !important; }
+      .divider { background: #ccc !important; }
+      .section-title { color: #000 !important; border-left-color: #000 !important; }
+      .doc-title { font-size: 13pt; }
+      .print-page-break { page-break-before: always; }
+    }
+
+    /* ===========================
+       RESPONSIVE TWEAKS
+    =========================== */
+    @media (max-width: 480px) {
+      .main-wrap { padding: 12px 8px 90px; }
+      .form-card { padding: 14px 12px; }
+    }
+
+    /* ===========================
+       UTILITY
+    =========================== */
+    .mt-2 { margin-top: 8px; }
+    .mt-3 { margin-top: 12px; }
+    .mb-2 { margin-bottom: 8px; }
+    .text-muted { color: var(--muted); font-size: 0.8rem; }
+    .required::after { content: " *"; color: #ef4444; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>แบบฟอร์มการให้คำปรึกษา</h1>
+    <p>วิทยาลัยอาชีวศึกษาสุโขทัย — กรอกข้อมูลและกด "พิมพ์ / บันทึก PDF"</p>
+  </header>
+
+  <!-- Tab Navigation -->
+  <nav class="tab-nav" role="tablist" aria-label="เลือกแบบฟอร์ม">
+    <button class="tab-btn active" onclick="switchTab('tab1', this)" role="tab" aria-selected="true">
+      📋 แบบบันทึกให้คำปรึกษา
+    </button>
+    <button class="tab-btn" onclick="switchTab('tab2', this)" role="tab" aria-selected="false">
+      📊 รายงานให้คำปรึกษา (ตาราง)
+    </button>
+    <button class="tab-btn" onclick="switchTab('tab3', this)" role="tab" aria-selected="false">
+      👥 ติดตามนักเรียน
+    </button>
+  </nav>
+
+  <main class="main-wrap">
+
+    <!-- =========================================
+         TAB 1: แบบบันทึกให้คำปรึกษา (รายบุคคล)
+    ========================================= -->
+    <div id="tab1" class="tab-panel active">
+
+      <div class="form-card">
+        <div class="doc-title">แบบบันทึกให้คำปรึกษานักเรียน นักศึกษา (รายบุคคล)</div>
+        <div class="doc-subtitle">วิทยาลัยอาชีวศึกษาสุโขทัย</div>
+
+        <!-- Date / Time row -->
+        <div class="field-row cols-3">
+          <div class="field-group">
+            <label class="field-label" for="t1-date">วันที่</label>
+            <input id="t1-date" type="date" name="t1-date" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="t1-start-time">เริ่มเวลา</label>
+            <input id="t1-start-time" type="time" name="t1-start-time" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="t1-end-time">สิ้นสุดเวลา</label>
+            <input id="t1-end-time" type="time" name="t1-end-time" />
+          </div>
+        </div>
+      </div>
+
+      <!-- ผู้ขอรับการปรึกษา -->
+      <div class="form-card">
+        <div class="section-title">ผู้ขอรับการปรึกษา</div>
+
+        <div class="field-row cols-3">
+          <div class="field-group">
+            <label class="field-label" for="t1-fname">ชื่อ</label>
+            <input id="t1-fname" type="text" name="t1-fname" placeholder="ชื่อ" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="t1-lname">สกุล</label>
+            <input id="t1-lname" type="text" name="t1-lname" placeholder="นามสกุล" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="t1-nickname">ชื่อเล่น</label>
+            <input id="t1-nickname" type="text" name="t1-nickname" placeholder="ชื่อเล่น" />
+          </div>
+        </div>
+
+        <div class="field-row cols-4">
+          <div class="field-group">
+            <label class="field-label" for="t1-level">ระดับชั้น</label>
+            <select id="t1-level" name="t1-level">
+              <option value="">-- เลือก --</option>
+              <option>ปวช.</option>
+              <option>ปวส.</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="t1-year">ปีที่</label>
+            <select id="t1-year" name="t1-year">
+              <option value="">-- เลือก --</option>
+              <option>1</option>
+              <option>2</option>
+              <option>3</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="t1-room">ห้อง</label>
+            <input id="t1-room" type="text" name="t1-room" placeholder="ห้อง" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="t1-tel">เบอร์โทรศัพท์</label>
+            <input id="t1-tel" type="tel" name="t1-tel" placeholder="08x-xxx-xxxx" />
+          </div>
+        </div>
+      </div>
+
+      <!-- การพิจารณารับคำปรึกษา -->
+      <div class="form-card">
+        <div class="section-title">การพิจารณารับคำปรึกษา</div>
+        <div class="checkbox-group">
+          <label class="checkbox-item">
+            <input type="checkbox" name="t1-consult-type" value="1" />
+            สังเกตเห็นและเข้าไปช่วยเหลือเอง
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" name="t1-consult-type" value="2" />
+            ผู้รับการปรึกษามาด้วยตนเอง
+          </label>
+          <label class="checkbox-item" id="t1-refer-wrap">
+            <input type="checkbox" name="t1-consult-type" value="3" id="t1-refer-chk" onchange="toggleField('t1-refer-from', this)" />
+            ส่งต่อมาจาก
+          </label>
+        </div>
+        <div id="t1-refer-from" style="display:none;" class="field-group mb-2">
+          <input type="text" name="t1-refer-from-text" placeholder="ระบุแหล่งที่ส่งต่อ" />
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="checkbox-group">
+          <label class="checkbox-item">
+            <input type="radio" name="t1-session-type" value="first" />
+            เป็นครั้งแรก
+          </label>
+          <label class="checkbox-item" id="t1-cont-wrap">
+            <input type="radio" name="t1-session-type" value="continue" id="t1-cont-chk" onchange="toggleField('t1-session-num', this)" />
+            ต่อเนื่องเป็นครั้งที่
+          </label>
+        </div>
+        <div id="t1-session-num" style="display:none;" class="field-group mb-2" style="max-width:150px;">
+          <input type="number" name="t1-session-num-val" min="2" placeholder="ครั้งที่" style="max-width:140px;" />
+        </div>
+      </div>
+
+      <!-- กรณีการให้คำปรึกษา -->
+      <div class="form-card">
+        <div class="section-title">กรณีการให้คำปรึกษา</div>
+        <div class="checkbox-group">
+          <label class="checkbox-item"><input type="checkbox" name="t1-case" value="การเรียน" /> การเรียน</label>
+          <label class="checkbox-item"><input type="checkbox" name="t1-case" value="เพื่อน" /> เพื่อน</label>
+          <label class="checkbox-item"><input type="checkbox" name="t1-case" value="ครอบครัว" /> ครอบครัว</label>
+          <label class="checkbox-item"><input type="checkbox" name="t1-case" value="สุขภาพ" /> สุขภาพ</label>
+          <label class="checkbox-item"><input type="checkbox" name="t1-case" value="การศึกษาต่อ" /> การศึกษาต่อ</label>
+          <label class="checkbox-item"><input type="checkbox" name="t1-case" value="ความรัก" /> ความรัก</label>
+          <label class="checkbox-item"><input type="checkbox" name="t1-case" value="เศรษฐกิจ" /> เศรษฐกิจ</label>
+          <label class="checkbox-item"><input type="checkbox" name="t1-case" value="อาชีพ" /> อาชีพ/ทางงานพิเศษ</label>
+          <label class="checkbox-item" id="t1-other-wrap">
+            <input type="checkbox" name="t1-case" value="อื่นๆ" id="t1-other-chk" onchange="toggleField('t1-other-text', this)" />
+            อื่นๆ
+          </label>
+        </div>
+        <div id="t1-other-text" style="display:none;" class="field-group mb-2">
+          <input type="text" name="t1-other-detail" placeholder="ระบุรายละเอียด" />
+        </div>
+      </div>
+
+      <!-- ปัญหา / สาเหตุ -->
+      <div class="form-card">
+        <div class="section-title">ปัญหา / สาเหตุการขอรับการให้คำปรึกษา</div>
+        <div class="field-group">
+          <textarea id="t1-problem" name="t1-problem" rows="4" placeholder="อธิบายปัญหาและสาเหตุ..."></textarea>
+        </div>
+      </div>
+
+      <!-- การให้คำปรึกษา / แนะนำ -->
+      <div class="form-card">
+        <div class="section-title">การให้คำปรึกษา / แนะนำ / การช่วยเหลือ</div>
+        <div class="field-group">
+          <textarea id="t1-advice" name="t1-advice" rows="4" placeholder="อธิบายแนวทางการให้คำปรึกษา..."></textarea>
+        </div>
+      </div>
+
+      <!-- ผลสรุปการแก้ปัญหา -->
+      <div class="form-card">
+        <div class="section-title">ผลสรุปของการแก้ปัญหา</div>
+        <div class="field-group">
+          <textarea id="t1-result" name="t1-result" rows="3" placeholder="สรุปผลการแก้ปัญหา..."></textarea>
+        </div>
+      </div>
+
+      <!-- การนัดหมาย / ส่งต่อ -->
+      <div class="form-card">
+        <div class="section-title">การวางแผน / นัดหมาย / ส่งต่อ</div>
+
+        <div class="field-row cols-2">
+          <div class="field-group">
+            <label class="field-label" for="t1-next-date">วันนัดหมายครั้งต่อไป</label>
+            <input id="t1-next-date" type="date" name="t1-next-date" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="t1-next-time">เวลา</label>
+            <input id="t1-next-time" type="time" name="t1-next-time" />
+          </div>
+        </div>
+
+        <div class="field-group mb-2">
+          <label class="field-label" for="t1-followup">การติดตามผล</label>
+          <textarea id="t1-followup" name="t1-followup" rows="2" placeholder="แผนการติดตามผล..."></textarea>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="t1-refer">การส่งต่อ (ถ้ามี)</label>
+          <textarea id="t1-refer" name="t1-refer" rows="2" placeholder="รายละเอียดการส่งต่อ..."></textarea>
+        </div>
+      </div>
+
+      <!-- ลายมือชื่อ -->
+      <div class="form-card">
+        <div class="section-title">ลายมือชื่อ</div>
+        <div class="sig-row cols-2">
+          <div class="sig-box">
+            <div class="sig-label">ผู้รับคำปรึกษา</div>
+            <div class="sig-canvas-wrap">
+              <canvas id="sig1-canvas" ontouchstart="sigStart(event,'sig1-canvas')" ontouchmove="sigDraw(event,'sig1-canvas')" ontouchend="sigEnd('sig1-canvas')" onmousedown="sigStart(event,'sig1-canvas')" onmousemove="sigDraw(event,'sig1-canvas')" onmouseup="sigEnd('sig1-canvas')" onmouseleave="sigEnd('sig1-canvas')"></canvas>
+            </div>
+            <button class="sig-clear-btn" onclick="clearSig('sig1-canvas')">✕ ลบลายมือชื่อ</button>
+            <div class="sig-name">
+              <input type="text" name="t1-sig1-name" placeholder="(ชื่อ-สกุล)" />
+            </div>
+          </div>
+          <div class="sig-box">
+            <div class="sig-label">ผู้ให้คำปรึกษา</div>
+            <div class="sig-canvas-wrap">
+              <canvas id="sig2-canvas" ontouchstart="sigStart(event,'sig2-canvas')" ontouchmove="sigDraw(event,'sig2-canvas')" ontouchend="sigEnd('sig2-canvas')" onmousedown="sigStart(event,'sig2-canvas')" onmousemove="sigDraw(event,'sig2-canvas')" onmouseup="sigEnd('sig2-canvas')" onmouseleave="sigEnd('sig2-canvas')"></canvas>
+            </div>
+            <button class="sig-clear-btn" onclick="clearSig('sig2-canvas')">✕ ลบลายมือชื่อ</button>
+            <div class="sig-name">
+              <input type="text" name="t1-sig2-name" placeholder="(ชื่อ-สกุล)" />
+            </div>
+          </div>
+        </div>
+        <div class="mt-3 text-muted" style="text-align:center;">🎓 "เรียนดี มีคุณธรรม"</div>
+      </div>
+    </div><!-- /tab1 -->
+
+
+    <!-- =========================================
+         TAB 2: รายงานการให้คำปรึกษา (ตาราง)
+    ========================================= -->
+    <div id="tab2" class="tab-panel">
+
+      <div class="form-card">
+        <div class="doc-title">รายงานการให้คำปรึกษานักเรียนนักศึกษา</div>
+        <div class="doc-subtitle">วิทยาลัยอาชีวศึกษาสุโขทัย<br>แนวทางการดูแลช่วยเหลือผู้เรียน</div>
+
+        <div class="field-row cols-3">
+          <div class="field-group">
+            <label class="field-label" for="t2-term">ภาคเรียนที่</label>
+            <select id="t2-term" name="t2-term">
+              <option value="">-- เลือก --</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="t2-year">ปีการศึกษา</label>
+            <input id="t2-year" type="text" name="t2-year" placeholder="เช่น 2567" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="t2-dept">สาขาวิชา</label>
+            <input id="t2-dept" type="text" name="t2-dept" placeholder="สาขาวิชา" />
+          </div>
+        </div>
+
+        <div class="field-row cols-3">
+          <div class="field-group">
+            <label class="field-label" for="t2-level">ระดับชั้น</label>
+            <select id="t2-level" name="t2-level">
+              <option value="">-- เลือก --</option>
+              <option>ปวช.1</option>
+              <option>ปวช.2</option>
+              <option>ปวช.3</option>
+              <option>ปวส.1</option>
+              <option>ปวส.2</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="t2-room">ห้อง</label>
+            <input id="t2-room" type="text" name="t2-room" placeholder="ห้อง" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="t2-advisor">ครูที่ปรึกษา</label>
+            <input id="t2-advisor" type="text" name="t2-advisor" placeholder="ชื่อ-สกุลครูที่ปรึกษา" />
+          </div>
+        </div>
+      </div>
+
+      <!-- ตารางรายงาน -->
+      <div class="form-card">
+        <div class="section-title">ตารางรายงานการให้คำปรึกษา</div>
+        <div class="form-table-wrap">
+          <table class="form-table" id="t2-table">
+            <thead>
+              <tr>
+                <th style="width:6%;">ลำดับ</th>
+                <th style="width:22%;">ผู้รับคำปรึกษา<br><span style="font-weight:400;font-size:0.8rem;">(ชื่อ-สกุล)</span></th>
+                <th style="width:32%;">เรื่องที่ขอรับการปรึกษา</th>
+                <th style="width:13%;">แก้ปัญหา<br>สำเร็จ</th>
+                <th style="width:13%;">มีการ<br>ส่งต่อ</th>
+                <th style="width:14%;">หมายเหตุ</th>
+              </tr>
+            </thead>
+            <tbody id="t2-tbody">
+            </tbody>
+          </table>
+        </div>
+        <div class="mt-3 no-print" style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="clear-all-btn" onclick="addT2Row()" style="color:var(--primary);border-color:var(--primary);">+ เพิ่มแถว</button>
+          <button class="clear-all-btn" onclick="removeT2Row()" style="font-size:0.85rem;">− ลบแถวสุดท้าย</button>
+        </div>
+      </div>
+
+      <!-- ลายมือชื่อ -->
+      <div class="form-card">
+        <div class="section-title">ลายมือชื่อ</div>
+        <div class="sig-row cols-2">
+          <div class="sig-box">
+            <div class="sig-label">ครูที่ปรึกษา</div>
+            <div class="sig-canvas-wrap">
+              <canvas id="t2-sig1-canvas" ontouchstart="sigStart(event,'t2-sig1-canvas')" ontouchmove="sigDraw(event,'t2-sig1-canvas')" ontouchend="sigEnd('t2-sig1-canvas')" onmousedown="sigStart(event,'t2-sig1-canvas')" onmousemove="sigDraw(event,'t2-sig1-canvas')" onmouseup="sigEnd('t2-sig1-canvas')" onmouseleave="sigEnd('t2-sig1-canvas')"></canvas>
+            </div>
+            <button class="sig-clear-btn" onclick="clearSig('t2-sig1-canvas')">✕ ลบลายมือชื่อ</button>
+            <div class="sig-name">
+              <input type="text" name="t2-sig1-name" placeholder="(ชื่อ-สกุล)" />
+            </div>
+          </div>
+          <div class="sig-box">
+            <div class="sig-label">หัวหน้างานครูที่ปรึกษา</div>
+            <div class="sig-canvas-wrap">
+              <canvas id="t2-sig2-canvas" ontouchstart="sigStart(event,'t2-sig2-canvas')" ontouchmove="sigDraw(event,'t2-sig2-canvas')" ontouchend="sigEnd('t2-sig2-canvas')" onmousedown="sigStart(event,'t2-sig2-canvas')" onmousemove="sigDraw(event,'t2-sig2-canvas')" onmouseup="sigEnd('t2-sig2-canvas')" onmouseleave="sigEnd('t2-sig2-canvas')"></canvas>
+            </div>
+            <button class="sig-clear-btn" onclick="clearSig('t2-sig2-canvas')">✕ ลบลายมือชื่อ</button>
+            <div class="sig-name">
+              <input type="text" name="t2-sig2-name" placeholder="(ชื่อ-สกุล)" />
+            </div>
+          </div>
+        </div>
+        <div class="mt-3 text-muted" style="text-align:center;">🎓 "เรียนดี มีคุณธรรม"</div>
+      </div>
+    </div><!-- /tab2 -->
+
+
+    <!-- =========================================
+         TAB 3: การติดตามนักเรียน
+    ========================================= -->
+    <div id="tab3" class="tab-panel">
+
+      <div class="form-card">
+        <div class="doc-title">การติดตามนักเรียน นักศึกษาที่ขาดเรียนบ่อย<br>และนักเรียนที่ออกกลางคัน</div>
+        <div class="doc-subtitle">วิทยาลัยอาชีวศึกษาสุโขทัย</div>
+
+        <div class="field-row cols-3">
+          <div class="field-group">
+            <label class="field-label" for="t3-term">ภาคเรียนที่</label>
+            <select id="t3-term" name="t3-term">
+              <option value="">-- เลือก --</option>
+              <option>1</option>
+              <option>2</option>
+              <option>3</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="t3-year">ปีการศึกษา</label>
+            <input id="t3-year" type="text" name="t3-year" placeholder="เช่น 2567" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="t3-advisor">ครูที่ปรึกษา</label>
+            <input id="t3-advisor" type="text" name="t3-advisor" placeholder="ชื่อ-สกุล" />
+          </div>
+        </div>
+        <div class="field-row cols-3">
+          <div class="field-group">
+            <label class="field-label" for="t3-level">ระดับชั้น</label>
+            <select id="t3-level" name="t3-level">
+              <option value="">-- เลือก --</option>
+              <option>ปวช.1</option>
+              <option>ปวช.2</option>
+              <option>ปวช.3</option>
+              <option>ปวส.1</option>
+              <option>ปวส.2</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="t3-room">ห้อง</label>
+            <input id="t3-room" type="text" name="t3-room" placeholder="ห้อง" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="t3-dept">สาขาวิชา</label>
+            <input id="t3-dept" type="text" name="t3-dept" placeholder="สาขาวิชา" />
+          </div>
+        </div>
+      </div>
+
+      <!-- ตารางติดตาม -->
+      <div class="form-card">
+        <div class="section-title">ตารางติดตามนักเรียน นักศึกษา</div>
+        <div class="form-table-wrap">
+          <table class="form-table" id="t3-table">
+            <thead>
+              <tr>
+                <th style="width:5%;" rowspan="2">ลำดับ</th>
+                <th style="width:25%;" rowspan="2">รายชื่อนักเรียน นักศึกษา</th>
+                <th colspan="4">สาเหตุออกกลางคัน</th>
+                <th colspan="2">การติดตาม</th>
+              </tr>
+              <tr>
+                <th style="width:9%;font-size:0.8rem;">ลาออก</th>
+                <th style="width:9%;font-size:0.8rem;">พักการเรียน</th>
+                <th style="width:9%;font-size:0.8rem;">พ้นสภาพ</th>
+                <th style="width:14%;font-size:0.8rem;">ไม่มาเรียน<br>(มีรายชื่อ)</th>
+                <th style="width:12%;font-size:0.8rem;">โทรศัพท์/<br>Line</th>
+                <th style="width:12%;font-size:0.8rem;">เยี่ยมบ้าน</th>
+              </tr>
+            </thead>
+            <tbody id="t3-tbody">
+            </tbody>
+          </table>
+        </div>
+        <div class="mt-3 no-print" style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="clear-all-btn" onclick="addT3Row()" style="color:var(--primary);border-color:var(--primary);">+ เพิ่มแถว</button>
+          <button class="clear-all-btn" onclick="removeT3Row()" style="font-size:0.85rem;">− ลบแถวสุดท้าย</button>
+        </div>
+      </div>
+
+      <!-- การติดตาม สาเหตุ -->
+      <div class="form-card">
+        <div class="section-title">สรุปการติดตาม</div>
+        <div class="field-group">
+          <label class="field-label" for="t3-tracking-note">การติดตาม / สาเหตุที่ทำให้นักเรียนนักศึกษาออกกลางคัน</label>
+          <textarea id="t3-tracking-note" name="t3-tracking-note" rows="4" placeholder="อธิบายสาเหตุและการติดตาม..."></textarea>
+        </div>
+      </div>
+
+      <!-- ลายมือชื่อ -->
+      <div class="form-card">
+        <div class="section-title">ลายมือชื่อ</div>
+        <div class="sig-row cols-2">
+          <div class="sig-box">
+            <div class="sig-label">ครูที่ปรึกษา</div>
+            <div class="sig-canvas-wrap">
+              <canvas id="t3-sig1-canvas" ontouchstart="sigStart(event,'t3-sig1-canvas')" ontouchmove="sigDraw(event,'t3-sig1-canvas')" ontouchend="sigEnd('t3-sig1-canvas')" onmousedown="sigStart(event,'t3-sig1-canvas')" onmousemove="sigDraw(event,'t3-sig1-canvas')" onmouseup="sigEnd('t3-sig1-canvas')" onmouseleave="sigEnd('t3-sig1-canvas')"></canvas>
+            </div>
+            <button class="sig-clear-btn" onclick="clearSig('t3-sig1-canvas')">✕ ลบลายมือชื่อ</button>
+            <div class="sig-name">
+              <input type="text" name="t3-sig1-name" placeholder="(ชื่อ-สกุล)" />
+            </div>
+          </div>
+          <div class="sig-box">
+            <div class="sig-label">หัวหน้างานครูที่ปรึกษา</div>
+            <div class="sig-canvas-wrap">
+              <canvas id="t3-sig2-canvas" ontouchstart="sigStart(event,'t3-sig2-canvas')" ontouchmove="sigDraw(event,'t3-sig2-canvas')" ontouchend="sigEnd('t3-sig2-canvas')" onmousedown="sigStart(event,'t3-sig2-canvas')" onmousemove="sigDraw(event,'t3-sig2-canvas')" onmouseup="sigEnd('t3-sig2-canvas')" onmouseleave="sigEnd('t3-sig2-canvas')"></canvas>
+            </div>
+            <button class="sig-clear-btn" onclick="clearSig('t3-sig2-canvas')">✕ ลบลายมือชื่อ</button>
+            <div class="sig-name">
+              <input type="text" name="t3-sig2-name" placeholder="(ชื่อ-สกุล)" />
+            </div>
+          </div>
+        </div>
+        <div class="mt-3 text-muted" style="text-align:center;">🎓 "เรียนดี มีคุณธรรม"</div>
+      </div>
+    </div><!-- /tab3 -->
+
+  </main>
+
+  <!-- Sticky Print Bar -->
+  <div class="print-bar">
+    <button class="clear-all-btn" onclick="clearActiveTab()">🗑 ล้างข้อมูล</button>
+    <button class="print-btn" onclick="window.print()">
+      🖨️ พิมพ์ / บันทึก PDF
+    </button>
+  </div>
+
+  <script>
+    // ===========================
+    // TAB SWITCHING
+    // ===========================
+    function switchTab(id, btn) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-selected', 'false');
+      });
+      document.getElementById(id).classList.add('active');
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
+    }
+
+    // ===========================
+    // TOGGLE HELPER FIELD
+    // ===========================
+    function toggleField(fieldId, chk) {
+      const el = document.getElementById(fieldId);
+      if (!el) return;
+      el.style.display = chk.checked ? 'flex' : 'none';
+    }
+
+    // ===========================
+    // SIGNATURE PAD
+    // ===========================
+    const sigState = {};
+
+    function getCtx(id) {
+      const canvas = document.getElementById(id);
+      if (!canvas) return null;
+      // Ensure canvas is properly sized
+      if (canvas.width !== canvas.offsetWidth || canvas.height !== canvas.offsetHeight) {
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = canvas.offsetWidth * dpr;
+        canvas.height = canvas.offsetHeight * dpr;
+        const ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
+      }
+      return canvas.getContext('2d');
+    }
+
+    function getPos(e, canvas) {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const source = e.touches ? e.touches[0] : e;
+      return {
+        x: (source.clientX - rect.left),
+        y: (source.clientY - rect.top)
+      };
+    }
+
+    function sigStart(e, id) {
+      e.preventDefault();
+      const canvas = document.getElementById(id);
+      const ctx = getCtx(id);
+      if (!ctx) return;
+      const pos = getPos(e, canvas);
+      sigState[id] = { drawing: true };
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
+    }
+
+    function sigDraw(e, id) {
+      e.preventDefault();
+      if (!sigState[id] || !sigState[id].drawing) return;
+      const canvas = document.getElementById(id);
+      const ctx = getCtx(id);
+      if (!ctx) return;
+      const pos = getPos(e, canvas);
+      ctx.strokeStyle = '#111';
+      ctx.lineWidth = 1.8;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+    }
+
+    function sigEnd(id) {
+      if (sigState[id]) sigState[id].drawing = false;
+    }
+
+    function clearSig(id) {
+      const canvas = document.getElementById(id);
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // Resize all canvases on load
+    function initCanvases() {
+      document.querySelectorAll('.sig-canvas-wrap canvas').forEach(canvas => {
+        const dpr = window.devicePixelRatio || 1;
+        const w = canvas.offsetWidth;
+        const h = canvas.offsetHeight;
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+        const ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
+      });
+    }
+
+    // ===========================
+    // TABLE: TAB 2 - รายงานให้คำปรึกษา
+    // ===========================
+    let t2RowCount = 0;
+
+    function addT2Row() {
+      t2RowCount++;
+      const tbody = document.getElementById('t2-tbody');
+      const tr = document.createElement('tr');
+      tr.id = `t2-row-${t2RowCount}`;
+      tr.innerHTML = `
+        <td class="row-num center">${t2RowCount}</td>
+        <td><input type="text" name="t2-name-${t2RowCount}" placeholder="ชื่อ-สกุล" /></td>
+        <td><textarea name="t2-topic-${t2RowCount}" rows="2" placeholder="เรื่องที่ปรึกษา"></textarea></td>
+        <td class="center"><input type="checkbox" name="t2-solved-${t2RowCount}" /></td>
+        <td class="center"><input type="checkbox" name="t2-refer-${t2RowCount}" /></td>
+        <td><input type="text" name="t2-note-${t2RowCount}" placeholder="" /></td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    function removeT2Row() {
+      if (t2RowCount === 0) return;
+      const row = document.getElementById(`t2-row-${t2RowCount}`);
+      if (row) row.remove();
+      t2RowCount--;
+    }
+
+    // Initialize 12 rows for tab 2
+    function initT2() {
+      for (let i = 0; i < 12; i++) addT2Row();
+    }
+
+    // ===========================
+    // TABLE: TAB 3 - ติดตามนักเรียน
+    // ===========================
+    let t3RowCount = 0;
+
+    function addT3Row() {
+      t3RowCount++;
+      const tbody = document.getElementById('t3-tbody');
+      const tr = document.createElement('tr');
+      tr.id = `t3-row-${t3RowCount}`;
+      tr.innerHTML = `
+        <td class="row-num center">${t3RowCount}</td>
+        <td><input type="text" name="t3-name-${t3RowCount}" placeholder="ชื่อ-สกุล" /></td>
+        <td class="center"><input type="checkbox" name="t3-resign-${t3RowCount}" /></td>
+        <td class="center"><input type="checkbox" name="t3-pause-${t3RowCount}" /></td>
+        <td class="center"><input type="checkbox" name="t3-expelled-${t3RowCount}" /></td>
+        <td class="center"><input type="checkbox" name="t3-absent-${t3RowCount}" /></td>
+        <td class="center"><input type="checkbox" name="t3-call-${t3RowCount}" /></td>
+        <td class="center"><input type="checkbox" name="t3-visit-${t3RowCount}" /></td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    function removeT3Row() {
+      if (t3RowCount === 0) return;
+      const row = document.getElementById(`t3-row-${t3RowCount}`);
+      if (row) row.remove();
+      t3RowCount--;
+    }
+
+    function initT3() {
+      for (let i = 0; i < 12; i++) addT3Row();
+    }
+
+    // ===========================
+    // CLEAR ACTIVE TAB
+    // ===========================
+    function clearActiveTab() {
+      const activePanel = document.querySelector('.tab-panel.active');
+      if (!activePanel) return;
+      if (!confirm('ล้างข้อมูลทั้งหมดในแบบฟอร์มนี้?')) return;
+
+      activePanel.querySelectorAll('input[type="text"], input[type="number"], input[type="tel"], input[type="time"], input[type="date"], textarea').forEach(el => el.value = '');
+      activePanel.querySelectorAll('input[type="checkbox"], input[type="radio"]').forEach(el => el.checked = false);
+      activePanel.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
+      activePanel.querySelectorAll('.sig-canvas-wrap canvas').forEach(canvas => {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      });
+      // Hide conditional fields
+      activePanel.querySelectorAll('[id$="-from"], [id$="-num"], [id$="-text"]').forEach(el => {
+        if (el.style.display !== undefined) el.style.display = 'none';
+      });
+    }
+
+    // ===========================
+    // INIT
+    // ===========================
+    window.addEventListener('load', () => {
+      initT2();
+      initT3();
+      // Small delay to ensure DOM layout is complete
+      setTimeout(initCanvases, 100);
+    });
+
+    window.addEventListener('resize', initCanvases);
+  </script>
+</body>
+</html>
