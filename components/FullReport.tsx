@@ -82,6 +82,15 @@ export default function FullReport() {
     const [stSig1, setStSig1] = useState('');
     const [stSig2, setStSig2] = useState('');
 
+    // Page 4 — สรุปปัญหา/ข้อเสนอแนะ
+    const [smProblems, setSmProblems] = useState('');
+    const [smCorrections, setSmCorrections] = useState('');
+    const [smSuggestions, setSmSuggestions] = useState('');
+    const [smSig1, setSmSig1] = useState('');
+    const [smSig2, setSmSig2] = useState('');
+    const [smSig3, setSmSig3] = useState('');
+    const [smSig4, setSmSig4] = useState('');
+
     // View State
     const [viewMode, setViewMode] = useState<ViewMode>("cover");
 
@@ -136,7 +145,7 @@ export default function FullReport() {
         if (!selectedAdvisor) return alert("กรุณาเลือกครูที่ปรึกษา");
 
         // For interactive fill-in forms: use the browser print dialog so filled data is captured
-        if (viewMode === 'counseling-form' || viewMode === 'counseling-table' || viewMode === 'student-tracking') {
+        if (viewMode === 'counseling-form' || viewMode === 'counseling-table' || viewMode === 'student-tracking' || viewMode === 'summary-form') {
             window.print();
             return;
         }
@@ -702,35 +711,96 @@ export default function FullReport() {
 
                                     <div className="mb-3">
                                         <div className="font-semibold mb-2">1. ปัญหาของนักเรียน ในการจัดกิจกรรม</div>
-                                        {[1, 2, 3, 4].map(i => <div key={i} className="border-b border-gray-400 mb-3 h-5" />)}
+                                        <textarea
+                                            className="cf-ta w-full text-[11px]"
+                                            style={{
+                                                minHeight: '100px',
+                                                lineHeight: '25px',
+                                                background: 'repeating-linear-gradient(transparent, transparent 24px, #bbb 24px, #bbb 25px)',
+                                                backgroundSize: '100% 25px',
+                                                border: 'none',
+                                                padding: '0 4px',
+                                                resize: 'none',
+                                                outline: 'none'
+                                            }}
+                                            value={smProblems}
+                                            onChange={e => setSmProblems(e.target.value)}
+                                            placeholder="ระบุปัญหาของนักเรียนในการจัดกิจกรรม..."
+                                        />
                                     </div>
 
                                     <div className="mb-3 mt-5">
                                         <div className="font-semibold mb-2">2. แนวทางการแก้ไขปัญหาของครูที่ปรึกษา</div>
-                                        {[1, 2, 3, 4].map(i => <div key={i} className="border-b border-gray-400 mb-3 h-5" />)}
+                                        <textarea
+                                            className="cf-ta w-full text-[11px]"
+                                            style={{
+                                                minHeight: '100px',
+                                                lineHeight: '25px',
+                                                background: 'repeating-linear-gradient(transparent, transparent 24px, #bbb 24px, #bbb 25px)',
+                                                backgroundSize: '100% 25px',
+                                                border: 'none',
+                                                padding: '0 4px',
+                                                resize: 'none',
+                                                outline: 'none'
+                                            }}
+                                            value={smCorrections}
+                                            onChange={e => setSmCorrections(e.target.value)}
+                                            placeholder="ระบุแนวทางการแก้ไขปัญหาของครูที่ปรึกษา..."
+                                        />
                                     </div>
 
                                     <div className="mb-3 mt-5">
                                         <div className="font-semibold mb-2">3. ข้อเสนอแนะ</div>
-                                        {[1, 2, 3, 4, 5].map(i => <div key={i} className="border-b border-gray-400 mb-3 h-5" />)}
+                                        <textarea
+                                            className="cf-ta w-full text-[11px]"
+                                            style={{
+                                                minHeight: '125px',
+                                                lineHeight: '25px',
+                                                background: 'repeating-linear-gradient(transparent, transparent 24px, #bbb 24px, #bbb 25px)',
+                                                backgroundSize: '100% 25px',
+                                                border: 'none',
+                                                padding: '0 4px',
+                                                resize: 'none',
+                                                outline: 'none'
+                                            }}
+                                            value={smSuggestions}
+                                            onChange={e => setSmSuggestions(e.target.value)}
+                                            placeholder="ระบุข้อเสนอแนะเพิ่มเติม..."
+                                        />
                                     </div>
 
                                     <div className="mt-8 grid grid-cols-2 gap-8">
                                         <div className="text-center">
-                                            <div className="flex items-end justify-center gap-1 mb-1">ลงชื่อ{dotLine("w-24")}ครูที่ปรึกษา</div>
-                                            <div>({selectedAdvisor.name})</div>
+                                            <div className="flex items-end justify-center gap-1 mb-1">
+                                                <span>ลงชื่อ</span>
+                                                <input className="cf-inp text-center" style={{width:'120px'}} value={smSig1} onChange={e=>setSmSig1(e.target.value)} />
+                                                <span>ครูที่ปรึกษา</span>
+                                            </div>
+                                            <div>({smSig1 || selectedAdvisor.name})</div>
                                         </div>
                                         <div className="text-center">
-                                            <div className="flex items-end justify-center gap-1 mb-1">ลงชื่อ{dotLine("w-24")}ครูที่ปรึกษา</div>
-                                            <div>(.......................................)</div>
+                                            <div className="flex items-end justify-center gap-1 mb-1">
+                                                <span>ลงชื่อ</span>
+                                                <input className="cf-inp text-center" style={{width:'120px'}} value={smSig2} onChange={e=>setSmSig2(e.target.value)} />
+                                                <span>ครูที่ปรึกษา</span>
+                                            </div>
+                                            <div>({smSig2 ? smSig2 : '.......................................'})</div>
                                         </div>
                                         <div className="text-center">
-                                            <div className="flex items-end justify-center gap-1 mb-1">ลงชื่อ{dotLine("w-24")}หัวหน้าแผนกวิชา</div>
-                                            <div>(.......................................)</div>
+                                            <div className="flex items-end justify-center gap-1 mb-1">
+                                                <span>ลงชื่อ</span>
+                                                <input className="cf-inp text-center" style={{width:'120px'}} value={smSig3} onChange={e=>setSmSig3(e.target.value)} />
+                                                <span>หัวหน้าแผนกวิชา</span>
+                                            </div>
+                                            <div>({smSig3 ? smSig3 : '.......................................'})</div>
                                         </div>
                                         <div className="text-center">
-                                            <div className="flex items-end justify-center gap-1 mb-1">ลงชื่อ{dotLine("w-24")}หัวหน้างานครูที่ปรึกษา</div>
-                                            <div>(.......................................)</div>
+                                            <div className="flex items-end justify-center gap-1 mb-1">
+                                                <span>ลงชื่อ</span>
+                                                <input className="cf-inp text-center" style={{width:'120px'}} value={smSig4} onChange={e=>setSmSig4(e.target.value)} />
+                                                <span>หัวหน้างานครูที่ปรึกษา</span>
+                                            </div>
+                                            <div>({smSig4 ? smSig4 : '.......................................'})</div>
                                         </div>
                                     </div>
                                     <div className="absolute bottom-4 left-0 right-0 text-center font-bold text-[13px]">"เรียนดี มีคุณธรรม"</div>
