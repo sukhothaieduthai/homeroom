@@ -66,7 +66,7 @@ export default function HomeroomForm() {
         currentYearBE + 2,
     ];
 
-    const [term, setTerm] = useState("2");
+    const [term, setTerm] = useState("1");
     const [academicYear, setAcademicYear] = useState(String(currentYearBE));
     const [selectedAdvisor, setSelectedAdvisor] = useState<Advisor | null>(null);
     const [formData, setFormData] = useState({
@@ -278,7 +278,6 @@ export default function HomeroomForm() {
                         >
                             <option value="1">1</option>
                             <option value="2">2</option>
-                            <option value="3">3</option>
                         </select>
                     </div>
                     <div className="flex flex-col gap-2">
