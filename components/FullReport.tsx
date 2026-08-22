@@ -15,7 +15,7 @@ export default function FullReport() {
     const currentYearBE = currentYearAD + 543;
     const years = [currentYearBE - 1, currentYearBE, currentYearBE + 1, currentYearBE + 2, currentYearBE + 3];
 
-    const [term, setTerm] = useState("2");
+    const [term, setTerm] = useState("1");
     const [academicYear, setAcademicYear] = useState(String(currentYearBE));
     const [selectedAdvisor, setSelectedAdvisor] = useState<Advisor | null>(null);
 
@@ -286,7 +286,6 @@ export default function FullReport() {
                         >
                             <option value="1">1</option>
                             <option value="2">2</option>
-                            <option value="3">3</option>
                         </select>
                     </div>
                     <div className="flex flex-col gap-2">
