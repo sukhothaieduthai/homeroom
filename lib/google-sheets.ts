@@ -68,10 +68,12 @@ export class GoogleSheetService {
 
             this.doc = new GoogleSpreadsheet(SHEET_ID, jwt);
             await this.doc.loadInfo();
-            this.isConnected = true;
+            this.isConnected = true; // ✅ Set only after successful connection
+            console.log("[Sheets] Connected to Google Sheets:", this.doc.title);
         } catch (error) {
-            console.error("Failed to connect to Google Sheets:", error);
-            this.doc = null; // Ensure doc is null if connection fails
+            console.error("[Sheets] Failed to connect to Google Sheets:", error);
+            this.doc = null;
+            this.isConnected = false; // ✅ Explicitly reset so next call can retry
         }
     }
 

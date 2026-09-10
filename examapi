@@ -1,0 +1,70 @@
+// ============================================================
+// Homeroom System — Google Apps Script File Upload API
+// Deploy as: Web App (Execute as: Me, Access: Anyone)
+// ============================================================
+
+function doPost(e) {
+  // ✅ Handle delete action
+  if (e.parameter.action === 'delete') {
+    try {
+      var fileId = e.parameter.fileId;
+      DriveApp.getFileById(fileId).setTrashed(true);
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: true }))
+        .setMimeType(ContentService.MimeType.JSON);
+    } catch (err) {
+      return ContentService
+        .createTextOutput(JSON.stringify({ success: false, error: err.message }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+  }
+
+  // ✅ Handle file upload
+  try {
+    var fileData = e.parameter.file;
+    var fileName = e.parameter.fileName;
+    var mimeType = e.parameter.mimeType;
+
+    // 📁 Folder ID ที่จะเก็บรูปภาพ
+    var folderId = "1Duiz41ib2w-5BUMMCTYKU2OtX9Jg0Tpr";
+
+    var folder = DriveApp.getFolderById(folderId);
+    var decodedData = Utilities.base64Decode(fileData);
+    var blob = Utilities.newBlob(decodedData, mimeType, fileName);
+    var file = folder.createFile(blob);
+
+    // ✅ ตั้งค่า sharing: ทุกคนที่มี link เปิดดูได้
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+    var fileId = file.getId();
+
+    // ✅ ใช้ uc?export=view format — รองรับ direct embed ใน img tag และ PDF
+    var directUrl = "https://drive.google.com/uc?export=view&id=" + fileId;
+
+    Logger.log("Uploaded: " + fileName + " → " + fileId);
+
+    return ContentService.createTextOutput(JSON.stringify({
+      "success": true,
+      "url": directUrl,
+      "fileId": fileId,
+      "fileName": fileName
+    })).setMimeType(ContentService.MimeType.JSON);
+
+  } catch (error) {
+    Logger.log("Upload error: " + error.toString());
+    return ContentService.createTextOutput(JSON.stringify({
+      "success": false,
+      "error": error.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// ✅ สำหรับทดสอบว่า Web App ทำงานอยู่
+// เปิด URL ของ deployment ใน browser ควรเห็น JSON response
+function doGet() {
+  return ContentService.createTextOutput(JSON.stringify({
+    "status": "Homeroom File Upload API is running",
+    "version": "3.0",
+    "timestamp": new Date().toISOString()
+  })).setMimeType(ContentService.MimeType.JSON);
+}
