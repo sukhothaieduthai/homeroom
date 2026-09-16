@@ -604,6 +604,56 @@ export async function POST(req: NextRequest) {
             </div>
         `;
 
+        // --- SUMMARY MODE: All-advisors report table (for /report page export) ---
+        const getSummaryHTML = () => {
+            const termLabel = (term && term !== 'All') ? `ภาคเรียนที่ ${term}/${academicYear}` : 'ทุกภาคเรียน';
+            const ROWS_PER_PAGE = 30;
+            if (!reports || reports.length === 0) {
+                return `<div class="page"><div style="text-align:center;margin-top:80px;font-size:16pt;color:#999;">ไม่พบรายงาน</div></div>`;
+            }
+            const chunks: any[][] = [];
+            for (let i = 0; i < reports.length; i += ROWS_PER_PAGE) {
+                chunks.push(reports.slice(i, i + ROWS_PER_PAGE));
+            }
+            return chunks.map((chunk: any[], pageIndex: number) => `
+                <div class="page" style="padding:12mm 12mm 12mm 12mm;">
+                    <div style="text-align:center;font-weight:bold;font-size:14pt;margin-bottom:4px;">สรุปรายงานกิจกรรมโฮมรูม</div>
+                    <div style="text-align:center;font-size:11pt;margin-bottom:10px;">${termLabel} &mdash; วิทยาลัยอาชีวศึกษาสุโขทัย${pageIndex > 0 ? ` (ต่อ หน้า ${pageIndex + 1})` : ''}</div>
+                    <table style="width:100%;border-collapse:collapse;font-size:9pt;">
+                        <thead>
+                            <tr>
+                                <th style="border:1px solid black;padding:3px;background:#f0f0f0;text-align:center;width:5%;">ลำดับ</th>
+                                <th style="border:1px solid black;padding:3px;background:#f0f0f0;text-align:center;width:9%;">เทอม/ปี</th>
+                                <th style="border:1px solid black;padding:3px;background:#f0f0f0;text-align:center;width:7%;">สัปดาห์</th>
+                                <th style="border:1px solid black;padding:3px;background:#f0f0f0;text-align:center;width:9%;">วันที่</th>
+                                <th style="border:1px solid black;padding:3px;background:#f0f0f0;text-align:left;width:20%;">ครูที่ปรึกษา</th>
+                                <th style="border:1px solid black;padding:3px;background:#f0f0f0;text-align:center;width:10%;">ชั้น/ห้อง</th>
+                                <th style="border:1px solid black;padding:3px;background:#f0f0f0;text-align:left;width:28%;">หัวข้อกิจกรรม</th>
+                                <th style="border:1px solid black;padding:3px;background:#f0f0f0;text-align:center;width:6%;">มา</th>
+                                <th style="border:1px solid black;padding:3px;background:#f0f0f0;text-align:center;width:6%;">ขาด</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${chunk.map((r: any, i: number) => `
+                                <tr style="background:${(pageIndex * ROWS_PER_PAGE + i) % 2 === 0 ? '#fff' : '#f9fafb'}">
+                                    <td style="border:1px solid black;padding:2px 4px;text-align:center;">${pageIndex * ROWS_PER_PAGE + i + 1}</td>
+                                    <td style="border:1px solid black;padding:2px 4px;text-align:center;">${r.term}/${r.academicYear}</td>
+                                    <td style="border:1px solid black;padding:2px 4px;text-align:center;">${r.week}</td>
+                                    <td style="border:1px solid black;padding:2px 4px;text-align:center;">${r.date}</td>
+                                    <td style="border:1px solid black;padding:2px 4px;">${r.advisorName || ''}</td>
+                                    <td style="border:1px solid black;padding:2px 4px;text-align:center;">${r.classLevel || ''} ${r.room || ''}</td>
+                                    <td style="border:1px solid black;padding:2px 4px;">${r.topic || ''}</td>
+                                    <td style="border:1px solid black;padding:2px 4px;text-align:center;">${r.presentStudents}</td>
+                                    <td style="border:1px solid black;padding:2px 4px;text-align:center;">${r.absentStudents}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    <div style="margin-top:8px;font-size:8pt;text-align:right;color:#777;">พิมพ์เมื่อ: ${new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                </div>
+            `).join('');
+        };
+
         // --- Assemble HTML ---
         let contentHTML = '';
 
@@ -614,6 +664,7 @@ export async function POST(req: NextRequest) {
         else if (mode === 'counseling-table') contentHTML = getCounselingTableHTML();
         else if (mode === 'student-tracking') contentHTML = getStudentTrackingHTML();
         else if (mode === 'summary-form') contentHTML = getSummaryFormHTML();
+        else if (mode === 'summary') contentHTML = getSummaryHTML();
         else {
             // fallback: full report
             contentHTML += getCoverHTML();

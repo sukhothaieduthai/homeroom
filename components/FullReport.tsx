@@ -113,7 +113,9 @@ export default function FullReport() {
         const rigorousFiltered = allReports.filter(r =>
             (r.academicYear === academicYear || !r.academicYear) &&
             (r.term === term || !r.term) &&
-            r.advisorName?.includes(selectedAdvisor.name)
+            r.advisorName?.includes(selectedAdvisor.name) &&
+            r.room === selectedAdvisor.room &&           // ✅ must match exact room
+            r.classLevel === selectedAdvisor.classLevel  // ✅ must match exact class level
         );
         setFilteredReports(rigorousFiltered);
 

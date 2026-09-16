@@ -118,7 +118,9 @@ export default function HomeroomForm() {
         const filtered = allReports.filter(r =>
             (r.academicYear === academicYear || !r.academicYear) &&
             (r.term === term || !r.term) &&
-            r.advisorName?.includes(selectedAdvisor.name)
+            r.advisorName?.includes(selectedAdvisor.name) &&
+            r.room === selectedAdvisor.room &&           // ✅ exact room match
+            r.classLevel === selectedAdvisor.classLevel  // ✅ exact class level match
         );
 
         // Sort by week number (ascending)
