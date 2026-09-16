@@ -234,18 +234,18 @@ export class GoogleSheetService {
 
             const rowData = {
                 id: newReport.id,
-                term: newReport.term,
-                academicYear: newReport.academicYear,
-                week: newReport.week,
+                term: String(newReport.term),
+                academicYear: String(newReport.academicYear),
+                week: String(newReport.week), // Save as string to avoid Google Sheets row-index conflict for week >= 10
                 date: newReport.date,
                 advisorName: newReport.advisorName,
                 department: newReport.department,
                 classLevel: newReport.classLevel,
                 room: newReport.room,
                 topic: newReport.topic,
-                totalStudents: newReport.totalStudents,
-                presentStudents: newReport.presentStudents,
-                absentStudents: newReport.absentStudents,
+                totalStudents: String(newReport.totalStudents),
+                presentStudents: String(newReport.presentStudents),
+                absentStudents: String(newReport.absentStudents),
                 photoUrl: newReport.photoUrl || '',
                 timestamp: newReport.timestamp,
             };
