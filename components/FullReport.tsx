@@ -7,6 +7,16 @@ import AdvisorSelector from "./AdvisorSelector";
 import { DownloadIcon, FileTextIcon, TableIcon, ImageIcon, ClipboardListIcon, UsersIcon, BookOpenIcon } from "lucide-react";
 import { convertToDriveDirectUrl } from "@/lib/drive-utils";
 
+/** Route Drive (and other external) image URLs through the server-side proxy to avoid CORS. */
+const proxyImageUrl = (url: string): string => {
+    if (!url) return url;
+    // Only proxy Google Drive / googleusercontent URLs
+    if (url.includes('drive.google.com') || url.includes('googleusercontent.com')) {
+        return `/api/image-proxy?url=${encodeURIComponent(url)}`;
+    }
+    return url;
+};
+
 type ViewMode = "cover" | "table" | "photos" | "counseling-form" | "counseling-table" | "student-tracking" | "summary-form";
 
 export default function FullReport() {
@@ -491,7 +501,7 @@ export default function FullReport() {
                                                             <div key={startIdx + index} className="flex flex-col items-center">
                                                                 <div className="aspect-[4/3] w-full bg-gray-100 border border-gray-300 overflow-hidden relative">
                                                                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                                    <img src={url} alt={`Activity ${startIdx + index + 1}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" crossOrigin="anonymous" />
+                                                                    <img src={proxyImageUrl(url)} alt={`Activity ${startIdx + index + 1}`} className="w-full h-full object-cover" />
                                                                 </div>
                                                             </div>
                                                         ))}
