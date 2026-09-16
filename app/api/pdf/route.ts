@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import puppeteer from 'puppeteer';
 
 export async function POST(req: NextRequest) {
@@ -49,6 +49,44 @@ export async function POST(req: NextRequest) {
             console.error('Failed to load fonts, PDF will use fallback fonts:', e);
             // Leave base64Regular and base64Bold as empty strings
             // PDF will fallback to browser default fonts
+        }
+
+        // --- Photo Pre-loading (Server-Side) ---
+        // Convert Google Drive photo URLs to base64 data URIs so Puppeteer
+        // can embed them without external network requests in headless mode.
+        // Google Drive redirects and referrer restrictions block headless loading.
+        const fetchImageAsBase64 = async (url: string): Promise<string> => {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout per image
+                const res = await fetch(url, {
+                    signal: controller.signal,
+                    headers: {
+                        // Mimic a browser to pass Google Drive's redirect
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    }
+                });
+                clearTimeout(timeoutId);
+                if (!res.ok) {
+                    console.warn(`[PDF] Photo fetch failed (${res.status}): ${url}`);
+                    return url; // Fall back to original URL
+                }
+                const contentType = res.headers.get('content-type') || 'image/jpeg';
+                const arrayBuffer = await res.arrayBuffer();
+                const base64 = Buffer.from(arrayBuffer).toString('base64');
+                return `data:${contentType};base64,${base64}`;
+            } catch (e) {
+                console.warn(`[PDF] Could not pre-fetch photo: ${url}`, e);
+                return url; // Fall back to original URL
+            }
+        };
+
+        // Pre-fetch all photos if mode is 'photos'
+        let resolvedPhotos: string[] = photos || [];
+        if (mode === 'photos' && photos && photos.length > 0) {
+            console.log(`[PDF] Pre-fetching ${photos.length} photo(s) as base64...`);
+            resolvedPhotos = await Promise.all(photos.map((url: string) => fetchImageAsBase64(url)));
+            console.log(`[PDF] Photo pre-fetch complete.`);
         }
 
         // --- HTML Construction Helpers ---
@@ -334,13 +372,13 @@ export async function POST(req: NextRequest) {
         };
 
         const getPhotosHTML = () => {
-            if (!photos || photos.length === 0) return '';
+            if (!resolvedPhotos || resolvedPhotos.length === 0) return '';
 
             let html = '';
             const chunks = [];
             // Changed from 4 to 6 photos per page
-            for (let i = 0; i < photos.length; i += 6) {
-                chunks.push(photos.slice(i, i + 6));
+            for (let i = 0; i < resolvedPhotos.length; i += 6) {
+                chunks.push(resolvedPhotos.slice(i, i + 6));
             }
 
             chunks.forEach((chunk: string[], pageIndex: number) => {
@@ -571,7 +609,7 @@ export async function POST(req: NextRequest) {
 
         if (mode === 'cover') contentHTML = getCoverHTML();
         else if (mode === 'table') contentHTML = getTableHTML();
-        else if (mode === 'photos' && photos && photos.length > 0) contentHTML = getPhotosHTML();
+        else if (mode === 'photos' && resolvedPhotos && resolvedPhotos.length > 0) contentHTML = getPhotosHTML();
         else if (mode === 'counseling-form') contentHTML = getCounselingFormHTML();
         else if (mode === 'counseling-table') contentHTML = getCounselingTableHTML();
         else if (mode === 'student-tracking') contentHTML = getStudentTrackingHTML();
@@ -580,7 +618,7 @@ export async function POST(req: NextRequest) {
             // fallback: full report
             contentHTML += getCoverHTML();
             contentHTML += getTableHTML();
-            if (photos && photos.length > 0) contentHTML += getPhotosHTML();
+            if (resolvedPhotos && resolvedPhotos.length > 0) contentHTML += getPhotosHTML();
         }
 
         const fullHTML = `
