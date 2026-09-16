@@ -54,31 +54,74 @@ export async function POST(req: NextRequest) {
         // --- Photo Pre-loading (Server-Side) ---
         // Convert Google Drive photo URLs to base64 data URIs so Puppeteer
         // can embed them without external network requests in headless mode.
-        // Google Drive redirects and referrer restrictions block headless loading.
+        // Google Drive's uc?export=view now returns HTML redirect/consent pages,
+        // so we try the thumbnail API first, then fall back with content-type validation.
+
+        // Extract Google Drive file ID from any Drive URL format
+        const extractDriveFileId = (url: string): string | null => {
+            // Format: /file/d/FILE_ID/...
+            const viewMatch = url.match(/\/file\/d\/([^/?]+)/);
+            if (viewMatch) return viewMatch[1];
+            // Format: ?id=FILE_ID or &id=FILE_ID
+            const idMatch = url.match(/[?&]id=([^&]+)/);
+            if (idMatch) return idMatch[1].split('?')[0];
+            return null;
+        };
+
         const fetchImageAsBase64 = async (url: string): Promise<string> => {
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout per image
-                const res = await fetch(url, {
-                    signal: controller.signal,
-                    headers: {
-                        // Mimic a browser to pass Google Drive's redirect
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                    }
-                });
-                clearTimeout(timeoutId);
-                if (!res.ok) {
-                    console.warn(`[PDF] Photo fetch failed (${res.status}): ${url}`);
-                    return url; // Fall back to original URL
-                }
-                const contentType = res.headers.get('content-type') || 'image/jpeg';
-                const arrayBuffer = await res.arrayBuffer();
-                const base64 = Buffer.from(arrayBuffer).toString('base64');
-                return `data:${contentType};base64,${base64}`;
-            } catch (e) {
-                console.warn(`[PDF] Could not pre-fetch photo: ${url}`, e);
-                return url; // Fall back to original URL
+            const headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+            };
+
+            // Build list of URLs to try (most reliable first)
+            const urlsToTry: string[] = [];
+            const fileId = extractDriveFileId(url);
+            if (fileId) {
+                // Google Drive thumbnail API — bypasses virus scan & cookie consent pages
+                urlsToTry.push(`https://drive.google.com/thumbnail?id=${fileId}&sz=w1000`);
+                // uc?export=view as fallback
+                urlsToTry.push(`https://drive.google.com/uc?export=view&id=${fileId}`);
             }
+            // Always include original URL as last resort
+            if (!urlsToTry.includes(url)) urlsToTry.push(url);
+
+            for (const tryUrl of urlsToTry) {
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 15000);
+                    const res = await fetch(tryUrl, { signal: controller.signal, headers, redirect: 'follow' });
+                    clearTimeout(timeoutId);
+
+                    if (!res.ok) {
+                        console.warn(`[PDF] Photo fetch failed (${res.status}): ${tryUrl}`);
+                        continue;
+                    }
+
+                    const contentType = res.headers.get('content-type') || '';
+                    // Reject HTML responses (redirect/consent/virus warning pages)
+                    if (contentType.includes('text/html') || contentType.includes('text/plain')) {
+                        console.warn(`[PDF] Got HTML instead of image from: ${tryUrl} — trying next URL`);
+                        continue;
+                    }
+
+                    const imageContentType = contentType.startsWith('image/') ? contentType : 'image/jpeg';
+                    const arrayBuffer = await res.arrayBuffer();
+                    if (arrayBuffer.byteLength < 100) {
+                        // Too small to be a real image — skip
+                        console.warn(`[PDF] Response too small (${arrayBuffer.byteLength} bytes) from: ${tryUrl}`);
+                        continue;
+                    }
+                    const base64 = Buffer.from(arrayBuffer).toString('base64');
+                    console.log(`[PDF] Successfully fetched image (${Math.round(arrayBuffer.byteLength / 1024)}KB) from: ${tryUrl}`);
+                    return `data:${imageContentType};base64,${base64}`;
+                } catch (e) {
+                    console.warn(`[PDF] Could not fetch photo from ${tryUrl}:`, e);
+                }
+            }
+
+            console.warn(`[PDF] All URL attempts failed for: ${url}`);
+            return url; // Fall back to original URL as last resort
         };
 
         // Pre-fetch all photos if mode is 'photos'
