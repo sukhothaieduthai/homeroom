@@ -143,6 +143,28 @@ export default function FullReport() {
         });
         setReportPhotos(photos);
 
+        // Extract student tracking data if recorded
+        for (const r of rigorousFiltered) {
+            if (r.studentTracking && r.studentTracking.length > 0) {
+                const mapped = r.studentTracking.map(st => ({
+                    name: st.name || '',
+                    resign: !!st.resign,
+                    pause: !!st.pause,
+                    expelled: !!st.expelled,
+                    absent: !!st.absent,
+                    call: !!st.call,
+                    visit: !!st.visit,
+                }));
+                while (mapped.length < 12) {
+                    mapped.push({ name: '', resign: false, pause: false, expelled: false, absent: false, call: false, visit: false });
+                }
+                setStRows(mapped);
+                if (r.studentTrackingNotes) {
+                    setStNote(r.studentTrackingNotes);
+                }
+                break;
+            }
+        }
     }, [allReports, term, academicYear, selectedAdvisor]);
 
     const handleAdvisorSelect = (advisors: Advisor[]) => {

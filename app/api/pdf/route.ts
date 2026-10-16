@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import puppeteer from 'puppeteer';
+import { convertToDriveDirectUrl } from '@/lib/drive-utils';
+import { getStudentTrackingHTML as renderStudentTrackingTemplate } from '@/lib/pdf-templates/studentTrackingTemplate';
 
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
         const { mode, data } = body;
         const { term, academicYear, advisor, reports, photos } = data;
+        const convertedPhotos = photos?.map((url: string) => convertToDriveDirectUrl(url)) || [];
 
         // --- Logo Loading (Server-Side) ---
         // Fetch logo from public folder and convert to base64
@@ -565,48 +568,20 @@ export async function POST(req: NextRequest) {
         `;
 
         // --- NEW FORM 3: การติดตามนักเรียน ---
-        const getStudentTrackingHTML = () => `
-            <div class="page">
-                <div style="text-align: center; font-weight: bold; font-size: 14pt; margin-bottom: 12px;">การติดตามนักเรียน นักศึกษาที่ขาดเรียนบ่อย และนักเรียนที่ออกกลางคัน</div>
+        const getStudentTrackingHTML = () => {
+            const trackingReport = reports?.find((r: any) => r.studentTracking && r.studentTracking.length > 0);
+            const trackingRows = data.studentTracking || trackingReport?.studentTracking || [];
+            const trackingNotes = data.studentTrackingNotes || trackingReport?.studentTrackingNotes || '';
 
-                <table style="width: 100%; border-collapse: collapse; font-size: 10pt;">
-                    <thead>
-                        <tr>
-                            <th style="border: 1px solid black; padding: 3px; background: #f0f0f0; text-align: center; width: 5%;" rowspan="2">ลำดับ</th>
-                            <th style="border: 1px solid black; padding: 3px; background: #f0f0f0; text-align: center; width: 22%;" rowspan="2">รายชื่อนักเรียน นักศึกษา</th>
-                            <th style="border: 1px solid black; padding: 3px; background: #f0f0f0; text-align: center;" colspan="4">สาเหตุออกกลางคัน</th>
-                            <th style="border: 1px solid black; padding: 3px; background: #f0f0f0; text-align: center;" colspan="2">การติดตาม</th>
-                        </tr>
-                        <tr>
-                            <th style="border: 1px solid black; padding: 2px; background: #f0f0f0; text-align: center; font-size: 9pt;">ลาออก</th>
-                            <th style="border: 1px solid black; padding: 2px; background: #f0f0f0; text-align: center; font-size: 9pt;">พักการเรียน</th>
-                            <th style="border: 1px solid black; padding: 2px; background: #f0f0f0; text-align: center; font-size: 9pt;">พ้นสภาพ</th>
-                            <th style="border: 1px solid black; padding: 2px; background: #f0f0f0; text-align: center; font-size: 9pt;">ไม่มาเรียน (มีรายชื่อ)</th>
-                            <th style="border: 1px solid black; padding: 2px; background: #f0f0f0; text-align: center; font-size: 9pt;">โทรศัพท์/Line</th>
-                            <th style="border: 1px solid black; padding: 2px; background: #f0f0f0; text-align: center; font-size: 9pt;">เยี่ยมบ้าน</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${emptyRows(13, 8)}
-                    </tbody>
-                </table>
-
-                <div style="margin-top: 8px; font-size: 11pt;">การติดตาม สาเหตุที่ทำให้นักเรียนนักศึกษาออกกลางคัน.....................................................................................</div>
-                ${fullLine()}${fullLine()}
-
-                <div style="margin-top: 24px; display: flex; justify-content: space-around; text-align: center;">
-                    <div>
-                        <div>ลงชื่อ ${dotLine('120px')} ครูที่ปรึกษา</div>
-                        <div style="margin-top: 6px;">(${advisor.name})</div>
-                    </div>
-                    <div>
-                        <div>ลงชื่อ ${dotLine('120px')} ครูที่ปรึกษา</div>
-                        <div style="margin-top: 6px;">(.......................................)</div>
-                    </div>
-                </div>
-                <div style="position: absolute; bottom: 16px; left: 0; right: 0; text-align: center; font-weight: bold; font-size: 14pt;">"เรียนดี มีคุณธรรม"</div>
-            </div>
-        `;
+            return renderStudentTrackingTemplate({
+                term,
+                academicYear,
+                advisor,
+                rows: trackingRows,
+                notes: trackingNotes,
+                advisorSign1: advisor?.name,
+            });
+        };
 
         // --- NEW FORM 4: สรุปปัญหา/ข้อเสนอแนะ ---
         const getSummaryFormHTML = () => `

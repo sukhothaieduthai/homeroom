@@ -1,3 +1,5 @@
+import { convertToDriveDirectUrl } from "./drive-utils";
+
 const APPS_SCRIPT_URL = process.env.GOOGLE_APPS_SCRIPT_URL || "";
 
 export class GoogleDriveService {
@@ -43,8 +45,9 @@ export class GoogleDriveService {
             const result = await response.json();
 
             if (result.success && result.url) {
-                console.log(`[Drive] Uploaded: ${fileName} → ${result.url}`);
-                return result.url;
+                const directUrl = convertToDriveDirectUrl(result.url);
+                console.log(`[Drive] Uploaded: ${fileName} → ${directUrl}`);
+                return directUrl;
             } else {
                 console.error(`[Drive] Upload failed:`, result.error || "Unknown error");
                 return null;
