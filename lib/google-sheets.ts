@@ -1,6 +1,8 @@
-import { GoogleSpreadsheet } from 'google-spreadsheet';
+import { GoogleSpreadsheet, GoogleSpreadsheetWorksheet } from 'google-spreadsheet';
 import { JWT } from 'google-auth-library';
 import { driveService } from './google-drive';
+import { convertDriveUrls } from './drive-utils';
+import { StudentTrackingRow } from '@/types/tracking';
 
 // Types
 export interface Advisor {
@@ -27,6 +29,8 @@ export interface HomeroomReport {
     absentStudents: number;
     photoUrl?: string;
     timestamp: string;
+    studentTracking?: StudentTrackingRow[];
+    studentTrackingNotes?: string;
 }
 
 // Config
@@ -207,6 +211,56 @@ export class GoogleSheetService {
         }
     }
 
+    /**
+     * Auto-Healing Engine: Validates worksheet existence and guarantees
+     * header row initialization, preventing _ensureHeaderRowLoaded crashes
+     * when subsheets (like '2/2569') exist with empty header rows.
+     */
+    private async ensureWorksheetReady(sheetTitle: string): Promise<GoogleSpreadsheetWorksheet | null> {
+        if (!this.doc) return null;
+
+        const REPORT_HEADERS = [
+            'id', 'term', 'academicYear', 'week', 'date',
+            'advisorName', 'department', 'classLevel', 'room',
+            'topic', 'totalStudents', 'presentStudents',
+            'absentStudents', 'photoUrl', 'timestamp',
+            'studentTracking', 'studentTrackingNotes'
+        ];
+
+        let sheet = this.doc.sheetsByTitle[sheetTitle];
+
+        // 1. Create worksheet if missing
+        if (!sheet) {
+            try {
+                console.log(`[Auto-Heal] Worksheet '${sheetTitle}' missing. Creating...`);
+                sheet = await this.doc.addSheet({ title: sheetTitle });
+                await sheet.setHeaderRow(REPORT_HEADERS);
+                return sheet;
+            } catch (e) {
+                console.error(`[Auto-Heal] Error creating worksheet '${sheetTitle}':`, e);
+                return this.doc.sheetsByTitle[sheetTitle] || null;
+            }
+        }
+
+        // 2. Validate header row presence and auto-heal if missing/empty
+        try {
+            await sheet.loadHeaderRow();
+            if (!sheet.headerValues || sheet.headerValues.length === 0) {
+                console.warn(`[Auto-Heal] Worksheet '${sheetTitle}' has empty headers. Initializing headers...`);
+                await sheet.setHeaderRow(REPORT_HEADERS);
+            }
+        } catch (e) {
+            console.warn(`[Auto-Heal] Worksheet '${sheetTitle}' header check failed (${(e as Error).message}). Initializing header row...`);
+            try {
+                await sheet.setHeaderRow(REPORT_HEADERS);
+            } catch (err) {
+                console.error(`[Auto-Heal] Failed to initialize header row for '${sheetTitle}':`, err);
+            }
+        }
+
+        return sheet;
+    }
+
     async saveReport(report: Omit<HomeroomReport, 'id' | 'timestamp'>): Promise<string> {
         if (!this.isConnected) {
             await this.connect();
@@ -225,14 +279,7 @@ export class GoogleSheetService {
         }
 
         try {
-            const headers = [
-                'id', 'term', 'academicYear', 'week', 'date',
-                'advisorName', 'department', 'classLevel', 'room',
-                'topic', 'totalStudents', 'presentStudents',
-                'absentStudents', 'photoUrl', 'timestamp'
-            ];
-
-            const rowData = {
+            const rowData: Record<string, string> = {
                 id: newReport.id,
                 term: String(newReport.term),
                 academicYear: String(newReport.academicYear),
@@ -248,37 +295,27 @@ export class GoogleSheetService {
                 absentStudents: String(newReport.absentStudents),
                 photoUrl: newReport.photoUrl || '',
                 timestamp: newReport.timestamp,
+                studentTracking: newReport.studentTracking ? JSON.stringify(newReport.studentTracking) : '',
+                studentTrackingNotes: newReport.studentTrackingNotes || '',
             };
 
-
-            let sheet = this.doc.sheetsByTitle['Reports'];
-            if (!sheet) {
-                try {
-                    sheet = await this.doc.addSheet({ title: 'Reports' });
-                    await sheet.setHeaderRow(headers);
-                } catch (e) {
-                    console.error("Error creating sheet:", e);
-                }
-            }
-
+            // 1. Primary storage: Reports worksheet
+            const sheet = await this.ensureWorksheetReady('Reports');
             if (sheet) {
                 await sheet.addRow(rowData);
+            } else {
+                throw new Error("Could not access or initialize 'Reports' worksheet");
             }
 
+            // 2. Resilient Term/AcademicYear subsheet backup (non-blocking)
             const subSheetTitle = `${newReport.term}/${newReport.academicYear}`;
-            let subSheet = this.doc.sheetsByTitle[subSheetTitle];
-
-            if (!subSheet) {
-                try {
-                    subSheet = await this.doc.addSheet({ title: subSheetTitle });
-                    await subSheet.setHeaderRow(headers);
-                } catch (e) {
-                    subSheet = this.doc.sheetsByTitle[subSheetTitle];
+            try {
+                const subSheet = await this.ensureWorksheetReady(subSheetTitle);
+                if (subSheet) {
+                    await subSheet.addRow(rowData);
                 }
-            }
-
-            if (subSheet) {
-                await subSheet.addRow(rowData);
+            } catch (subErr) {
+                console.warn(`[Sheets] Warning: Could not save backup row to subsheet '${subSheetTitle}':`, subErr);
             }
 
             return newReport.id;
@@ -296,27 +333,41 @@ export class GoogleSheetService {
         if (!this.doc) return [...MOCK_REPORTS];
 
         try {
-            const sheet = this.doc.sheetsByTitle['Reports'];
+            const sheet = await this.ensureWorksheetReady('Reports');
             if (!sheet) return [...MOCK_REPORTS];
 
             const rows = await sheet.getRows();
-            return rows.map(row => ({
-                id: row.get('id'),
-                term: row.get('term') || '',
-                academicYear: row.get('academicYear') || '',
-                week: Number(row.get('week')),
-                date: row.get('date'),
-                advisorName: row.get('advisorName'),
-                department: row.get('department'),
-                classLevel: row.get('classLevel'),
-                room: row.get('room'),
-                topic: row.get('topic'),
-                totalStudents: Number(row.get('totalStudents')),
-                presentStudents: Number(row.get('presentStudents')),
-                absentStudents: Number(row.get('absentStudents')),
-                photoUrl: row.get('photoUrl'),
-                timestamp: row.get('timestamp'),
-            }));
+            return rows.map(row => {
+                let studentTracking: StudentTrackingRow[] | undefined;
+                const rawTracking = row.get('studentTracking');
+                if (rawTracking) {
+                    try {
+                        studentTracking = JSON.parse(rawTracking);
+                    } catch {
+                        // Ignore JSON parse error
+                    }
+                }
+
+                return {
+                    id: row.get('id'),
+                    term: row.get('term') || '',
+                    academicYear: row.get('academicYear') || '',
+                    week: Number(row.get('week')),
+                    date: row.get('date'),
+                    advisorName: row.get('advisorName'),
+                    department: row.get('department'),
+                    classLevel: row.get('classLevel'),
+                    room: row.get('room'),
+                    topic: row.get('topic'),
+                    totalStudents: Number(row.get('totalStudents')),
+                    presentStudents: Number(row.get('presentStudents')),
+                    absentStudents: Number(row.get('absentStudents')),
+                    photoUrl: convertDriveUrls(row.get('photoUrl') || ''),
+                    timestamp: row.get('timestamp'),
+                    studentTracking,
+                    studentTrackingNotes: row.get('studentTrackingNotes') || '',
+                };
+            });
         } catch (error) {
             console.error("Error fetching reports:", error);
             return [...MOCK_REPORTS];

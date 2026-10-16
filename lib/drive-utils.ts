@@ -13,43 +13,50 @@
 export function convertToDriveDirectUrl(url: string): string {
     if (!url) return url;
 
-    // Already a direct uc?export=view URL — return as-is
-    if (url.includes("drive.google.com/uc?") && url.includes("export=view")) {
-        return url;
-    }
+    const trimmed = url.trim();
 
-    // Already a googleusercontent or googleapis URL — return as-is
-    if (url.includes("googleusercontent.com") || url.includes("googleapis.com")) {
-        return url;
+    // Already a direct lh3/googleusercontent CDN link — return as-is
+    if (trimmed.includes("lh3.googleusercontent.com/d/") || trimmed.includes("googleapis.com")) {
+        return trimmed;
     }
 
     // Extract file ID from various Google Drive URL formats
     let fileId: string | null = null;
 
     // Format: https://drive.google.com/file/d/FILE_ID/view
-    const viewMatch = url.match(/\/file\/d\/([^/?]+)/);
+    const viewMatch = trimmed.match(/\/file\/d\/([^/?]+)/);
     if (viewMatch) {
         fileId = viewMatch[1];
     }
 
-    // Format: https://drive.google.com/uc?export=view&id=FILE_ID
-    // Format: https://drive.google.com/open?id=FILE_ID
+    // Format: https://drive.google.com/uc?export=view&id=FILE_ID or open?id=FILE_ID
     if (!fileId) {
-        const idMatch = url.match(/[?&]id=([^&]+)/);
+        const idMatch = trimmed.match(/[?&]id=([^&]+)/);
         if (idMatch) {
             fileId = idMatch[1];
         }
     }
 
-    // If we found a file ID, construct the uc?export=view URL
-    if (fileId) {
-        // Remove any trailing query params from fileId
-        fileId = fileId.split("?")[0];
-        return `https://drive.google.com/uc?export=view&id=${fileId}`;
+    // Format: https://drive.google.com/thumbnail?id=FILE_ID or /d/FILE_ID
+    if (!fileId) {
+        const pathMatch = trimmed.match(/\/d\/([^/?]+)/);
+        if (pathMatch) {
+            fileId = pathMatch[1];
+        }
     }
 
-    // If no conversion needed/possible, return original
-    return url;
+    // If we found a file ID, construct direct lh3 image CDN URL
+    if (fileId) {
+        fileId = fileId.split("?")[0].split("&")[0];
+        return `https://lh3.googleusercontent.com/d/${fileId}`;
+    }
+
+    // If raw 28+ character Drive File ID was passed directly
+    if (/^[a-zA-Z0-9_-]{25,}$/.test(trimmed)) {
+        return `https://lh3.googleusercontent.com/d/${trimmed}`;
+    }
+
+    return trimmed;
 }
 
 /**

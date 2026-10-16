@@ -2,6 +2,7 @@
 
 import { sheetService, Advisor, HomeroomReport } from "@/lib/google-sheets";
 import { driveService } from "@/lib/google-drive";
+import { ActionResult } from "@/types/actions";
 
 export async function getAdvisorsAction(): Promise<Advisor[]> {
     try {
@@ -14,29 +15,29 @@ export async function getAdvisorsAction(): Promise<Advisor[]> {
     }
 }
 
-export async function addAdvisorAction(advisor: Omit<Advisor, 'id'>) {
+export async function addAdvisorAction(advisor: Omit<Advisor, 'id'>): Promise<ActionResult> {
     try {
         await sheetService.connect();
         await sheetService.addAdvisor(advisor);
-        return { success: true };
+        return { success: true, data: undefined };
     } catch (error) {
         console.error("Failed to add advisor:", error);
-        return { success: false, error: "Failed to add advisor" };
+        return { success: false, error: error instanceof Error ? error.message : "Failed to add advisor" };
     }
 }
 
-export async function updateAdvisorAction(oldId: string, newData: Omit<Advisor, 'id'>) {
+export async function updateAdvisorAction(oldId: string, newData: Omit<Advisor, 'id'>): Promise<ActionResult> {
     try {
         await sheetService.connect();
         await sheetService.updateAdvisor(oldId, newData);
-        return { success: true };
+        return { success: true, data: undefined };
     } catch (error) {
         console.error("Failed to update advisor:", error);
-        return { success: false, error: "Failed to update advisor" };
+        return { success: false, error: error instanceof Error ? error.message : "Failed to update advisor" };
     }
 }
 
-export async function deleteAdvisorAction(id: string, pin: string) {
+export async function deleteAdvisorAction(id: string, pin: string): Promise<ActionResult> {
     try {
         const correctPin = process.env.ADMIN_DELETE_PIN;
 
@@ -46,41 +47,56 @@ export async function deleteAdvisorAction(id: string, pin: string) {
 
         await sheetService.connect();
         await sheetService.deleteAdvisor(id);
-        return { success: true };
+        return { success: true, data: undefined };
     } catch (error) {
         console.error("Failed to delete advisor:", error);
-        return { success: false, error: "Failed to delete advisor" };
+        return { success: false, error: error instanceof Error ? error.message : "Failed to delete advisor" };
     }
 }
 
-export async function saveReportAction(report: Omit<HomeroomReport, 'id' | 'timestamp'>): Promise<string> {
-    await sheetService.connect();
+export async function saveReportAction(
+    report: Omit<HomeroomReport, 'id' | 'timestamp'>
+): Promise<ActionResult<{ id: string }>> {
     try {
-        const allAdvisors = await sheetService.getAdvisors();
+        await sheetService.connect();
 
-        const matchedAdvisors = allAdvisors.filter(a =>
-            a.classLevel === report.classLevel &&
-            a.room === report.room &&
-            a.department === report.department
-        );
+        try {
+            const allAdvisors = await sheetService.getAdvisors();
 
-        if (matchedAdvisors.length > 0) {
-            const combinedNames = matchedAdvisors.map(a => a.name).join(" และ ");
-            report.advisorName = combinedNames;
+            const matchedAdvisors = allAdvisors.filter(a =>
+                a.classLevel === report.classLevel &&
+                a.room === report.room &&
+                a.department === report.department
+            );
+
+            if (matchedAdvisors.length > 0) {
+                const combinedNames = matchedAdvisors.map(a => a.name).join(" และ ");
+                report.advisorName = combinedNames;
+            }
+        } catch (error) {
+            console.error("Error auto-filling co-advisors:", error);
         }
 
+        const id = await sheetService.saveReport(report);
+        return { success: true, data: { id } };
     } catch (error) {
-        console.error("Error auto-filling co-advisors:", error);
+        console.error("Failed to save report:", error);
+        const errorMessage = error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการบันทึกรายงาน";
+        return { success: false, error: errorMessage };
     }
-    return sheetService.saveReport(report);
 }
 
 export async function getReportsAction(): Promise<HomeroomReport[]> {
-    await sheetService.connect();
-    return sheetService.getReports();
+    try {
+        await sheetService.connect();
+        return await sheetService.getReports();
+    } catch (error) {
+        console.error("Error in getReportsAction:", error);
+        return [];
+    }
 }
 
-export async function deleteReportsAction(ids: string[], pin: string) {
+export async function deleteReportsAction(ids: string[], pin: string): Promise<ActionResult> {
     try {
         const correctPin = process.env.ADMIN_DELETE_PIN;
         if (!correctPin || pin !== correctPin) {
@@ -88,10 +104,10 @@ export async function deleteReportsAction(ids: string[], pin: string) {
         }
         await sheetService.connect();
         await sheetService.deleteReports(ids);
-        return { success: true };
+        return { success: true, data: undefined };
     } catch (error) {
         console.error("Failed to delete reports:", error);
-        return { success: false, error: "เกิดข้อผิดพลาดในการลบรายงาน" };
+        return { success: false, error: error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการลบรายงาน" };
     }
 }
 
@@ -102,42 +118,39 @@ interface UploadMetadata {
     topic: string;
 }
 
-export async function uploadPhotosAction(formData: FormData): Promise<string[]> {
+export async function uploadPhotosAction(formData: FormData): Promise<ActionResult<string[]>> {
     try {
         const files = formData.getAll("files") as File[];
         const uploadedUrls: string[] = [];
 
         if (!files || files.length === 0) {
-            return [];
+            return { success: true, data: [] };
         }
 
         // Extract metadata from formData
         const metadata: UploadMetadata = {
-            advisorName: formData.get("advisorName") as string || "Unknown",
-            term: formData.get("term") as string || "",
-            date: formData.get("date") as string || "",
-            topic: formData.get("topic") as string || ""
+            advisorName: (formData.get("advisorName") as string) || "Unknown",
+            term: (formData.get("term") as string) || "",
+            date: (formData.get("date") as string) || "",
+            topic: (formData.get("topic") as string) || ""
         };
 
         // Create a sanitized topic (remove special characters, limit length)
         const sanitizeTopic = (topic: string): string => {
             return topic
-                .replace(/[^ก-๙a-zA-Z0-9\s]/g, '') // Remove special chars except Thai, English, numbers, spaces
+                .replace(/[^ก-๙a-zA-Z0-9\s]/g, '')
                 .trim()
-                .substring(0, 50) // Limit to 50 characters
-                .replace(/\s+/g, '_'); // Replace spaces with underscores
+                .substring(0, 50)
+                .replace(/\s+/g, '_');
         };
 
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
             const fileExtension = file.name.split('.').pop() || 'jpg';
-
-            // Format: {ชื่อครู}_{เทอม}_{วันที่}_{กิจกรรม}_{index}.{ext}
             const customFileName = `${metadata.advisorName}_T${metadata.term}_${metadata.date}_${sanitizeTopic(metadata.topic)}_${i + 1}.${fileExtension}`;
 
             try {
                 const driveLink = await driveService.uploadFile(file, customFileName);
-
                 if (driveLink) {
                     uploadedUrls.push(driveLink);
                 } else {
@@ -148,9 +161,10 @@ export async function uploadPhotosAction(formData: FormData): Promise<string[]> 
             }
         }
 
-        return uploadedUrls;
+        return { success: true, data: uploadedUrls };
     } catch (error) {
         console.error("[Upload] Error in uploadPhotosAction:", error);
-        throw error;
+        const errorMessage = error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ";
+        return { success: false, error: errorMessage };
     }
 }
